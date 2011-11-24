@@ -1,8 +1,8 @@
 TODO
 ====
-
-- Create a mixin in models that provides some autofields and an optional log message.
-- Create a model that contains the whole history table
-- Create a migration for it
-- Create a signal receiver that records changes for any table on the server
-- Have the signal receiver record fields from the mixin and the app.model and the id.
+- prevent django admin to do logentries by itself? Otherwise, you get double entries.
+- extend to include logging of delete events
+- serialize the diff to json
+- make tests
+- add configchecker handler to check if middleware correctly set up.
+- move django-tls to this app, instead of vss
