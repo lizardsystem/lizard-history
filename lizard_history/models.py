@@ -1,9 +1,12 @@
 # (c) Nelen & Schuurmans.  GPL licensed, see LICENSE.txt.
 
-from django.db.models.signals import pre_save
-#from django.db.models.signals import post_save
-#from django.db.models.signals import pre_delete
-from django.db.models.signals import post_delete
+from mongoengine.signals import pre_save as mongo_pre_save
+# from mongoengine.signals import pre_save as mongo_post_save
+from mongoengine.signals import post_delete as mongo_post_delete
+
+from django.db.models.signals import pre_save as django_pre_save
+#from django.db.models.signals import post_save as django_post_save
+from django.db.models.signals import post_delete as django_post_delete
 from django.db.models import Model
 
 from django.dispatch import receiver
@@ -36,9 +39,13 @@ lizard_history.configchecker  # Pyflakes...
 
 logger = logging.getLogger()
 
+# Django models not to include in history tracking
 EXCLUDED_MODELS = (
     Session,
 )
+
+# Mongoengin documents not to include in history tracking
+EXCLUDED_DOCUMENTS = ()
 
 
 def _dict_diff(dict1, dict2):
@@ -66,10 +73,10 @@ def _user_pk():
     return request.user.pk
 
 
-@receiver(pre_save)
-def pre_save_handler(sender, instance, raw, **kwargs):
+@receiver(django_pre_save)
+def django_pre_save_handler(sender, instance, raw, **kwargs):
     """
-    Put a save or change entry in the logentry.
+    Log a change or addition of a django model in the logentry.
     """
     if raw:
         # A fixture is loaded, may be we don't want to log
@@ -108,7 +115,7 @@ def pre_save_handler(sender, instance, raw, **kwargs):
     )
 
 
-@receiver(post_delete)
+@receiver(django_post_delete)
 def post_delete_handler(sender, instance, **kwargs):
     """
     Put a delete entry in the logentry.
@@ -129,3 +136,35 @@ def post_delete_handler(sender, instance, **kwargs):
         action_flag=action_flag,
         change_message=change_message,
     )
+
+@receiver(mongo_pre_save)
+def mongo_pre_save_handler(sender, document):
+    """
+    Log a change or addition of a mongoengine document in the logentry.
+    """
+    if sender in EXCLUDED_DOCUMENTS:
+        return
+
+    # Determine the type of action, and an appropriate change message
+    try:
+        original = sender.objects.get(pk=document.pk)
+        action_flag = CHANGE
+        change_message = 'TODO'
+    except sender.DoesNotExist:
+        action_flag = ADDITION
+        change_message = 'TODO'
+
+    # Insert a log entry in django's admin log.
+    LogEntry.objects.log_action(
+        user_id=_user_pk(),
+        content_type_id=None,
+        object_id=document.pk,
+        object_repr=force_unicode(document),
+        action_flag=action_flag,
+        change_message=change_message,
+    )
+
+
+@receiver(mongo_post_delete)
+def mongo_post_delete_handler(sender, document):
+    pass
