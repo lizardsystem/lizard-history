@@ -1,11 +1,14 @@
 # (c) Nelen & Schuurmans.  GPL licensed, see LICENSE.txt.
 
-from django.db import models
-from django.db.models.signals import pre_save
+#from django.db.models.signals import pre_save
+from django.db.models.signals import post_save
+# from django.db.models.signals import pre_delete
+from django.db.models.signals import post_delete
 
 from django.dispatch import receiver
 
 from django.utils.encoding import force_unicode
+from django.utils import simplejson
 
 from django.contrib.contenttypes.models import ContentType
 
@@ -22,9 +25,11 @@ from django.contrib.auth.models import AnonymousUser
 
 from tls import request
 
-import datetime
 import logging
 import pprint
+
+import lizard_history.configchecker
+lizard_history.configchecker  # Pyflakes...
 
 
 MSG_NO_USER = """
@@ -55,14 +60,13 @@ def _instance_dict(instance):
     return result
 
 
-
 # Get the first superuser, who will be framed into an admin role...
 admin = User.objects.filter(is_superuser=True)[0]
 logger = logging.getLogger(__name__)
 
 
-@receiver(pre_save)
-def pre_save_handler(sender, instance, raw, **kwargs):
+@receiver(post_save)
+def post_save_handler(sender, instance, created, raw, **kwargs):
     """
     Add an entry in the logentry
     """
@@ -73,12 +77,13 @@ def pre_save_handler(sender, instance, raw, **kwargs):
 
     if sender == LogEntry:
         # We must prevent LogEntries to trigger new LogEntries to be saved.
-        logger.debug('logging into LogEntry:\n%s', pprint.pformat(instance.__dict__))
+        logger.debug('logging into LogEntry:\n%s',
+                     pprint.pformat(instance.__dict__))
         return
 
     if sender in EXCLUDED_MODELS:
         return
-    
+
     # Determine the user
     if not request or isinstance(request.user, AnonymousUser):
         logger.warn(MSG_NO_USER % (
@@ -86,7 +91,7 @@ def pre_save_handler(sender, instance, raw, **kwargs):
             instance.__class__.__name__,
         ))
         # Get the first superuser
-        user_pk =  User.objects.filter(is_superuser=True)[0].pk
+        user_pk = User.objects.filter(is_superuser=True)[0].pk
     else:
         user_pk = request.user.pk
 
@@ -103,7 +108,7 @@ def pre_save_handler(sender, instance, raw, **kwargs):
     else:
         action_flag = ADDITION
 
-    change_message = pprint.pformat(_dict_diff(
+    change_message = simplejson.dumps(_dict_diff(
         _instance_dict(original),
         _instance_dict(instance),
     ))
@@ -117,3 +122,8 @@ def pre_save_handler(sender, instance, raw, **kwargs):
         action_flag=action_flag,
         change_message=change_message,
     )
+
+
+@receiver(post_save)
+def post_save_handler(sender, instance, created, raw, **kwargs):
+    pass
