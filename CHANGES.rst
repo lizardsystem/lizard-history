@@ -9,6 +9,6 @@ Changelog of lizard-history
 
 - Added django-tls to be able to use the request for logging user
 
-- Added receiver that logs changes to django models in django admin's logentry
+- Added receivers that log changes to django models in django admin's logentry
 
 - Added configchecker to check for correct middleware in site

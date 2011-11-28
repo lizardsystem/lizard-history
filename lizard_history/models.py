@@ -1,14 +1,17 @@
 # (c) Nelen & Schuurmans.  GPL licensed, see LICENSE.txt.
 
-#from django.db.models.signals import pre_save
-from django.db.models.signals import post_save
-# from django.db.models.signals import pre_delete
+from django.db.models.signals import pre_save
+#from django.db.models.signals import post_save
+#from django.db.models.signals import pre_delete
 from django.db.models.signals import post_delete
+from django.db.models import Model
 
 from django.dispatch import receiver
 
 from django.utils.encoding import force_unicode
 from django.utils import simplejson
+
+from django.core.serializers import serialize
 
 from django.contrib.contenttypes.models import ContentType
 
@@ -31,12 +34,7 @@ import pprint
 import lizard_history.configchecker
 lizard_history.configchecker  # Pyflakes...
 
-
-MSG_NO_USER = """
-%s.%s inherits from lizard_history,
-but no user or request is set on the object when saving. Lizard_history
-cannot determine the user responsible for this save action; defaulting
-to first superuser found."""
+logger = logging.getLogger()
 
 EXCLUDED_MODELS = (
     Session,
@@ -51,24 +49,27 @@ def _dict_diff(dict1, dict2):
                 set(dict1.iteritems()))
 
 
-def _instance_dict(instance):
+def _model_dict(instance):
     """
-    Return the instance dict without the state object.
+    Return a dict representing the django model.
+
+    We use the django serializer here.
     """
-    result = instance.__dict__.copy()
-    del result['_state']
-    return result
+    return serialize('python', [instance])[0]['fields']
 
 
-# Get the first superuser, who will be framed into an admin role...
-admin = User.objects.filter(is_superuser=True)[0]
-logger = logging.getLogger(__name__)
+def _user_pk():
+    """ Determine the user for this request."""
+    if not request or isinstance(request.user, AnonymousUser):
+        # Get the first superuser
+        return User.objects.filter(is_superuser=True)[0].pk
+    return request.user.pk
 
 
-@receiver(post_save)
-def post_save_handler(sender, instance, created, raw, **kwargs):
+@receiver(pre_save)
+def pre_save_handler(sender, instance, raw, **kwargs):
     """
-    Add an entry in the logentry
+    Put a save or change entry in the logentry.
     """
     if raw:
         # A fixture is loaded, may be we don't want to log
@@ -84,38 +85,21 @@ def post_save_handler(sender, instance, created, raw, **kwargs):
     if sender in EXCLUDED_MODELS:
         return
 
-    # Determine the user
-    if not request or isinstance(request.user, AnonymousUser):
-        logger.warn(MSG_NO_USER % (
-            instance.__module__,
-            instance.__class__.__name__,
-        ))
-        # Get the first superuser
-        user_pk = User.objects.filter(is_superuser=True)[0].pk
-    else:
-        user_pk = request.user.pk
-
-    # Determine the type of action. Unfortunately,
-    # we have to query the object to see if it will be an update or
-    # an insert.
+    # Determine the type of action, and an appropriate change message
     try:
         original = sender.objects.get(pk=instance.pk)
-    except sender.DoesNotExist:
-        original = sender()
-
-    if original.pk:
         action_flag = CHANGE
-    else:
+        change_message = simplejson.dumps(_dict_diff(
+            _model_dict(original),
+            _model_dict(instance),
+        ))
+    except sender.DoesNotExist:
         action_flag = ADDITION
-
-    change_message = simplejson.dumps(_dict_diff(
-        _instance_dict(original),
-        _instance_dict(instance),
-    ))
+        change_message = simplejson.dumps(_model_dict(instance))
 
     # Insert a log entry in django's admin log.
     LogEntry.objects.log_action(
-        user_id=user_pk,
+        user_id=_user_pk(),
         content_type_id=ContentType.objects.get_for_model(instance).pk,
         object_id=instance.pk,
         object_repr=force_unicode(instance),
@@ -124,6 +108,24 @@ def post_save_handler(sender, instance, created, raw, **kwargs):
     )
 
 
-@receiver(post_save)
-def post_save_handler(sender, instance, created, raw, **kwargs):
-    pass
+@receiver(post_delete)
+def post_delete_handler(sender, instance, **kwargs):
+    """
+    Put a delete entry in the logentry.
+    """
+    if sender in EXCLUDED_MODELS:
+        return
+
+    # Set action_flag and change message
+    action_flag = DELETION
+    change_message = simplejson.dumps(_model_dict(instance))
+
+    # Insert a log entry in django's admin log.
+    LogEntry.objects.log_action(
+        user_id=_user_pk(),
+        content_type_id=ContentType.objects.get_for_model(instance).pk,
+        object_id=instance.pk,
+        object_repr=force_unicode(instance),
+        action_flag=action_flag,
+        change_message=change_message,
+    )
