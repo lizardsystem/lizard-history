@@ -56,13 +56,16 @@ def _dict_diff(dict1, dict2):
                 set(dict1.iteritems()))
 
 
-def _model_dict(instance):
+def _object_dict(obj):
     """
     Return a dict representing the django model.
 
-    We use the django serializer here.
+    This is done by first serializing to json and then back to python,
+    since that eliminates the datetime objects that would remain if
+    serializing direct to python.
     """
-    return serialize('python', [instance])[0]['fields']
+    obj_json = serialize('json', [obj])
+    return simplejson.loads(obj_json)[0]['fields']
 
 
 def _user_pk():
@@ -97,12 +100,12 @@ def django_pre_save_handler(sender, instance, raw, **kwargs):
         original = sender.objects.get(pk=instance.pk)
         action_flag = CHANGE
         change_message = simplejson.dumps(_dict_diff(
-            _model_dict(original),
-            _model_dict(instance),
+            _object_dict(original),
+            _object_dict(instance),
         ))
     except sender.DoesNotExist:
         action_flag = ADDITION
-        change_message = simplejson.dumps(_model_dict(instance))
+        change_message = simplejson.dumps(_object_dict(instance))
 
     # Insert a log entry in django's admin log.
     LogEntry.objects.log_action(
@@ -125,7 +128,7 @@ def post_delete_handler(sender, instance, **kwargs):
 
     # Set action_flag and change message
     action_flag = DELETION
-    change_message = simplejson.dumps(_model_dict(instance))
+    change_message = simplejson.dumps(_object_dict(instance))
 
     # Insert a log entry in django's admin log.
     LogEntry.objects.log_action(
