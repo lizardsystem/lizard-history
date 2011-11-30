@@ -28,11 +28,14 @@ from django.contrib.admin.models import DELETION
 from django.contrib.auth.models import User
 from django.contrib.auth.models import AnonymousUser
 
-
+from pymongo import json_util
 from tls import request
 
+import datetime
+import difflib
 import logging
 import pprint
+import re
 
 import lizard_history.configchecker
 lizard_history.configchecker  # Pyflakes...
@@ -48,6 +51,22 @@ EXCLUDED_MODELS = (
 EXCLUDED_DOCUMENTS = ()
 
 
+def _clean_mongo_document_dict(obj):
+    """
+    Remove items whose key starts with '_' recursively
+    """
+    for key, value in obj.items():
+        if str(key).startswith('_'):
+            del obj[key]
+        elif isinstance(value, list):
+            raise NotImplementedError('ListFields are not implemented yet')
+        elif isinstance(value, dict):
+            _clean_mongo_document_dict(value)
+        elif isinstance(value, datetime.datetime):
+            obj[key] = str(value)
+
+
+
 def _dict_diff(dict1, dict2):
     """
     Return a dict with the changes going from obj1 to obj2.
@@ -55,8 +74,25 @@ def _dict_diff(dict1, dict2):
     return dict(set(dict2.iteritems()) -
                 set(dict1.iteritems()))
 
+def _json_diff(json1, json2):
+    """
+    Return a multiline diff string.
+    """
+    context_diff = list(difflib.context_diff(
+        json1.splitlines(True),
+        json2.splitlines(True),
+        n=0,  # No context lines
+    ))
+    result = ''
+    for line in context_diff[3:]:
+        line = re.sub('^!', '', line)
+        line = re.sub('^\*\*\*.*$','Removed:', line)
+        line = re.sub('^---.*$','Added:', line)
+        result += line
+    return result[:-1]
 
-def _object_dict(obj):
+
+def _django_object_dict(obj):
     """
     Return a dict representing the django model.
 
@@ -66,6 +102,20 @@ def _object_dict(obj):
     """
     obj_json = serialize('json', [obj])
     return simplejson.loads(obj_json)[0]['fields']
+
+
+def _mongo_document_json(obj):
+    """
+    Return a dict representing a mongoengine document.
+    """
+    obj_mongo = obj.to_mongo()
+    _clean_mongo_document_dict(obj_mongo)
+    obj_json = simplejson.dumps(
+        obj_mongo,
+        default=json_util.default,
+        indent=4,
+    )
+    return obj_json
 
 
 def _user_pk():
@@ -88,8 +138,6 @@ def django_pre_save_handler(sender, instance, raw, **kwargs):
 
     if sender == LogEntry:
         # We must prevent LogEntries to trigger new LogEntries to be saved.
-        logger.debug('logging into LogEntry:\n%s',
-                     pprint.pformat(instance.__dict__))
         return
 
     if sender in EXCLUDED_MODELS:
@@ -100,12 +148,12 @@ def django_pre_save_handler(sender, instance, raw, **kwargs):
         original = sender.objects.get(pk=instance.pk)
         action_flag = CHANGE
         change_message = simplejson.dumps(_dict_diff(
-            _object_dict(original),
-            _object_dict(instance),
+            _django_object_dict(original),
+            _django_object_dict(instance),
         ))
     except sender.DoesNotExist:
         action_flag = ADDITION
-        change_message = simplejson.dumps(_object_dict(instance))
+        change_message = simplejson.dumps(_django_object_dict(instance))
 
     # Insert a log entry in django's admin log.
     LogEntry.objects.log_action(
@@ -128,7 +176,7 @@ def post_delete_handler(sender, instance, **kwargs):
 
     # Set action_flag and change message
     action_flag = DELETION
-    change_message = simplejson.dumps(_object_dict(instance))
+    change_message = simplejson.dumps(_django_object_dict(instance))
 
     # Insert a log entry in django's admin log.
     LogEntry.objects.log_action(
@@ -141,7 +189,7 @@ def post_delete_handler(sender, instance, **kwargs):
     )
 
 @receiver(mongo_pre_save)
-def mongo_pre_save_handler(sender, document):
+def mongo_pre_save_handler(sender, document, **kwargs):
     """
     Log a change or addition of a mongoengine document in the logentry.
     """
@@ -149,13 +197,17 @@ def mongo_pre_save_handler(sender, document):
         return
 
     # Determine the type of action, and an appropriate change message
-    try:
+    if document.pk is None:
+        action_flag = ADDITION
+        change_message = _mongo_document_json(document)
+    else:
         original = sender.objects.get(pk=document.pk)
         action_flag = CHANGE
-        change_message = 'TODO'
-    except sender.DoesNotExist:
-        action_flag = ADDITION
-        change_message = 'TODO'
+        change_message = _json_diff(
+            _mongo_document_json(original),
+            _mongo_document_json(document),
+        )
+        #change_message = 'TODO'
 
     # Insert a log entry in django's admin log.
     LogEntry.objects.log_action(

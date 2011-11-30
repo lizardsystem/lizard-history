@@ -7,7 +7,7 @@ TODO
 
 - check for something set on the meta to start keeping history, or in the settings of the site.
 
-- think about many-to-many...
+- read about many-to-many...
 
 - solve the pre-/post- problem: using pre-save, we don't know if the
   save was succesful and what the pk became; using post-save, we don't
@@ -16,5 +16,8 @@ TODO
   from reinout, just put it on the request, but what if multiple saves
   are carried out? You can expect them to be in the correct order? Do
   some testing.
+
+- Models to get the history of any object, with optional depth.
   
 - prevent django admin to do logentries by itself? Otherwise, you get double entries.
+- adding contenttypes for mongomodels?

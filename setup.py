@@ -16,6 +16,8 @@ install_requires = [
     'lizard-ui >= 3.0',
     'pkginfo',
     'django-tls',
+    'mongoengine',
+    'pymongo',
     'blinker',
     ],
 
