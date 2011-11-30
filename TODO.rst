@@ -9,15 +9,8 @@ TODO
 
 - read about many-to-many...
 
-- solve the pre-/post- problem: using pre-save, we don't know if the
-  save was succesful and what the pk became; using post-save, we don't
-  know what the original was. So the whole logentry should be kept in some
-  local storage again, and a pk and verification added afterwards. Tip
-  from reinout, just put it on the request, but what if multiple saves
-  are carried out? You can expect them to be in the correct order? Do
-  some testing.
-
-- Models to get the history of any object, with optional depth.
+- Methods to get the history of any object, with optional depth.
   
-- prevent django admin to do logentries by itself? Otherwise, you get double entries.
-- adding contenttypes for mongomodels?
+- Move al the helpers and utils to some other file.
+
+- right now, putting an annotation logs as 'everythin changed', investigate.
