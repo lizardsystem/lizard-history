@@ -1,13 +1,18 @@
 TODO
 ====
-- make tests
+- make tests that
+    save a new model without pk
+    save a new model with pk
+    change a model
+    delete a model
+    save a new document without pk
+    save a new document with pk
+    change a document
+    delete a document
+    check if logentrie are written for each of the above
 
-- make it work for annotations / mongostuff too.
-  involves changemessage and content_type problem. Maybe insert own
-  contenttypes? Uh, oh.
-
-- check for something set on the meta to start keeping history, or in
-the settings of the site.
+- prepare a separate logentry table for mongostuff
+- prepare a separate contenttype table for mongostuff
 
 - read about many-to-many...
 
