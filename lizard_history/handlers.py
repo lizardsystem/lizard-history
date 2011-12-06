@@ -18,6 +18,8 @@ def pre_save_handler(sender, obj):
     """
     Store the original object on the request if it exists.
     """
+    if not request:
+        return
 
     obj._lizard_history_hash = object_hash(obj)
     if not hasattr(request, 'lizard_history'):
@@ -41,6 +43,8 @@ def post_save_handler(sender, obj):
     """
     Log a change or addition of an object in the logentry.
     """
+    if not request:
+        return
 
     # Retrieve the original object from the request, if any
     original = request.lizard_history.get(obj._lizard_history_hash)
@@ -76,6 +80,8 @@ def post_delete_handler(sender, obj):
     """
     Log the deletion of an object in the logentry.
     """
+    if not request:
+        return
 
     # Set action_flag and change message
     action_flag = DELETION

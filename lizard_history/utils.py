@@ -133,18 +133,25 @@ def format_diff(diff):
     """
     Return a multiline diff string.
     """
+    import logging
+    from pprint import pformat
+
     result = ''
     for line in diff[3:]:
         line = re.sub('^[!+-]', '', line)
         line = re.sub('^\*\*\*.*$', 'Removes:', line)
         line = re.sub('^--.*$', 'Adds:', line)
+        if not line.endswith('\n'):
+            # Make sure all lines end with a newline
+            line += '\n'
         result += line
+    result = result[:-1] # Remove last newline
     return result
 
 
 def user_pk():
     """ Determine the user for this request."""
-    if not request or isinstance(request.user, AnonymousUser):
+    if isinstance(request.user, AnonymousUser):
         # Get the first superuser
         return User.objects.filter(is_superuser=True)[0].pk
     return request.user.pk

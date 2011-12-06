@@ -7,8 +7,13 @@ Changelog of lizard-history
 
 - Initial library skeleton created by nensskel.  [Arjan Verkerk]
 
-- Added django-tls to be able to use the request for logging user
+- Adds django-tls to be able to use the request for logging user
 
-- Added receivers that log changes to django models in django admin's logentry
+- Adds receivers that log changes to django models in django admin's logentry
 
-- Added configchecker to check for correct middleware in site
+- Adds configchecker to check for correct middleware in site
+
+- Adds a database model and migration to keep track of models that should be monitored
+
+- Adds tools to hash and diff models
+
