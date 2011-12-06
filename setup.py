@@ -19,6 +19,7 @@ install_requires = [
     'mongoengine',
     'pymongo',
     'blinker',
+    'south',
     ],
 
 tests_require = [

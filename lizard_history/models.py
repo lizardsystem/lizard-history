@@ -9,11 +9,13 @@ from django.db.models.signals import post_save as django_post_save
 from django.db.models.signals import post_delete as django_post_delete
 
 from django.db import models
+from django.db.utils import DatabaseError
 
 from django.dispatch import receiver
 from django.contrib.sessions.models import Session
 from django.contrib.admin.models import LogEntry
 from django.utils.translation import ugettext_lazy as _
+# from django.utils.db import DatabaseError
 
 from lizard_history.handlers import pre_save_handler
 from lizard_history.handlers import post_save_handler
@@ -26,13 +28,22 @@ lizard_history.configchecker  # Pyflakes...
 def _is_monitored(sender):
     """
     Return if the sender is to be monitored.
-    """
-    
-    test = MonitoredModel.objects.filter(
-        app_label=sender.__module__.split('.')[0],
-        model=sender.__name__.lower()).exists()
 
-    return test
+    LogEntry is hardcoded here because monitoring logentry creates a loop
+    ContentType is excluded to be able to syncdb
+    """
+
+    if sender == LogEntry:
+        # Prevent a loop
+        return
+    
+    try:
+        return MonitoredModel.objects.filter(
+            app_label=sender.__module__.split('.')[0],
+            model=sender.__name__.lower()).exists()
+    except DatabaseError:
+        return False
+
 
 
 @receiver(django_pre_save)
@@ -41,7 +52,7 @@ def django_pre_save_handler(sender, instance, raw, **kwargs):
     Handle django_pre_save signal.
     """
     # Do nothing when loading fixtures, logging or not monitored
-    if raw or sender == LogEntry or not _is_monitored(sender):
+    if raw or not _is_monitored(sender):
         return
 
     pre_save_handler(sender, instance)
@@ -53,7 +64,7 @@ def django_post_save_handler(sender, instance, raw, **kwargs):
     Handle django_post_save signal.
     """
     # Do nothing when loading fixtures, logging or not monitored
-    if raw or sender == LogEntry or not _is_monitored(sender):
+    if raw or not _is_monitored(sender):
         return
 
     post_save_handler(sender, instance)
