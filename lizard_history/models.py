@@ -13,7 +13,14 @@ from django.db.utils import DatabaseError
 
 from django.dispatch import receiver
 from django.contrib.sessions.models import Session
+
 from django.contrib.admin.models import LogEntry
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import Permission
+from django.contrib.auth.models import User
+from django.contrib.sites.models import Site
+from south.models import MigrationHistory
+
 from django.utils.translation import ugettext_lazy as _
 # from django.utils.db import DatabaseError
 
@@ -24,26 +31,28 @@ from lizard_history.handlers import post_delete_handler
 import lizard_history.configchecker
 lizard_history.configchecker  # Pyflakes...
 
+# Some models are excluded here since they are involved in the process
+# of setting up the site
+EXCLUDED_MODELS = [
+    LogEntry,  # Prevent a loop
+    ContentType,
+    Permission,
+    Site,
+    MigrationHistory,
+    User
+]
+
 
 def _is_monitored(sender):
     """
     Return if the sender is to be monitored.
-
-    LogEntry is hardcoded here because monitoring logentry creates a loop
-    ContentType is excluded to be able to syncdb
     """
-
-    if sender == LogEntry:
-        # Prevent a loop
-        return
-    
-    try:
-        return MonitoredModel.objects.filter(
-            app_label=sender.__module__.split('.')[0],
-            model=sender.__name__.lower()).exists()
-    except DatabaseError:
+    if sender in EXCLUDED_MODELS:
         return False
-
+    
+    return MonitoredModel.objects.filter(
+        app_label=sender.__module__.split('.')[0],
+        model=sender.__name__.lower()).exists()
 
 
 @receiver(django_pre_save)

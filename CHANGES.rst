@@ -5,7 +5,7 @@ Changelog of lizard-history
 0.2 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Excludes all models that are involved in syncdb, migrate.
 
 
 0.1 (2011-12-06)
