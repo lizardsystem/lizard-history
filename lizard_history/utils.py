@@ -8,6 +8,7 @@ from django.utils import simplejson
 from django.core.serializers import serialize
 
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.admin.models import LogEntry
 
 from django.contrib.auth.models import User
 from django.contrib.auth.models import AnonymousUser
@@ -155,3 +156,25 @@ def user_pk():
         # Get the first superuser
         return User.objects.filter(is_superuser=True)[0].pk
     return request.user.pk
+
+
+def get_history(obj):
+    """ Get the history for a specific object """
+    if obj is None:
+        return None
+    elif isinstance(obj, Model):
+        content_type = ContentType.objects.get_for_model(obj)
+        object_id = obj.pk
+        hist = LogEntry.objects.filter(
+            content_type=content_type,
+            object_id=object_id,
+        )
+        print hist
+        return 'django!'
+
+    elif isinstance(obj, Document):
+        return 'mongo!'
+    else:
+        raise NotImplementedError(
+            'Only django and mongoengine models are currently implemented',
+        )

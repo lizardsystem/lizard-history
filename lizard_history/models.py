@@ -42,7 +42,6 @@ EXCLUDED_MODELS = [
     User
 ]
 
-
 def _is_monitored(sender):
     """
     Return if the sender is to be monitored.

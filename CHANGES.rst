@@ -5,7 +5,7 @@ Changelog of lizard-history
 0.2 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Adds method get_history to retrieve history for objects from LogEntry
 
 
 0.1.1 (2011-12-07)
