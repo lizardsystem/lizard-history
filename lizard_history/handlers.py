@@ -2,16 +2,19 @@
 from django.utils.encoding import force_unicode
 
 from django.contrib.admin.models import LogEntry
-from django.contrib.admin.models import ADDITION
-from django.contrib.admin.models import CHANGE
-from django.contrib.admin.models import DELETION
 
+from lizard_history.utils import LIZARD_ADDITION
+from lizard_history.utils import LIZARD_CHANGE
+from lizard_history.utils import LIZARD_DELETION
 from lizard_history.utils import object_hash
 from lizard_history.utils import user_pk
 from lizard_history import utils
 
 from tls import request
 
+
+# We take other values than Django to distuingish from
+# Django's own entries.
 
 def pre_save_handler(sender, obj):
     """
@@ -49,9 +52,9 @@ def post_save_handler(sender, obj):
     original = request.lizard_history.get(obj._lizard_history_hash)
 
     if original:
-        action_flag = CHANGE
+        action_flag = LIZARD_CHANGE
     else:
-        action_flag = ADDITION
+        action_flag = LIZARD_ADDITION
 
     change_message = utils.diff(original, obj)
 
@@ -78,7 +81,7 @@ def post_delete_handler(sender, obj):
         return
 
     # Set action_flag and change message
-    action_flag = DELETION
+    action_flag = LIZARD_DELETION
     change_message = utils.diff(obj, None)
 
     # Insert a log entry in django's admin log.

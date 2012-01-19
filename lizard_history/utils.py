@@ -22,6 +22,11 @@ import difflib
 import hashlib
 import re
 
+LIZARD_ADDITION = 4
+LIZARD_CHANGE = 5
+LIZARD_DELETION = 6
+
+
 def user_pk():
     """ Determine the user for this request."""
     if isinstance(request.user, AnonymousUser):
@@ -44,31 +49,26 @@ def object_hash(obj, use_time=True):
     return sha1.hexdigest()
 
 
-def _model_json(obj):
+def _model_dict(obj):
     """
-    Return a dict representing the django model.
+    Return a dict representing the Django model instance.
 
-    Django's serializer works on iterables, here we want a single
-    object. Therefore it gets loaded and dumped again.
+    Uses Django's serialization framework.
     """
     if obj is None:
-        return ''
+        return {}
 
     obj_json = serialize(
         'json',
         [obj],
-        indent=4,
     )
-    single_obj_json = simplejson.dumps(
-        simplejson.loads(obj_json)[0]['fields'],
-        indent=4,
-    )
-    return single_obj_json
+    model_dict = simplejson.loads(obj_json)[0]['fields']
+    return model_dict
 
 
-def _document_json(obj):
+def _document_json_string(obj):
     """
-    Return a dict representing a mongoengine document.
+    Return a json string representing a mongoengine document.
     """
     if obj is None:
         return ''
@@ -124,6 +124,25 @@ def _text_diff(str1, str2):
     ))
 
 
+def _dict_diff(dict1, dict2):
+    """
+    Return a dict representing the difference.
+    
+    Assumes two flat dicts.
+    """
+    keys = set(dict1.keys()) | set(dict2.keys())
+    result = {}
+    for k in keys:
+        if not dict1.get(k) == dict2.get(k):
+            result[k] = {
+                'old': dict1.get(k),
+                'new': dict2.get(k),
+            }
+
+    return result
+
+
+
 def _format_diff(diff):
     """
     Return a multiline diff string.
@@ -145,10 +164,13 @@ def _model_diff(obj1, obj2):
     """
     Return diff for Django models or None objects
     """
-    return _format_diff(_text_diff(
-        _model_json(obj1),
-        _model_json(obj2),
-    ))
+    return simplejson.dumps(
+        _dict_diff(
+            _model_dict(obj1),
+            _model_dict(obj2),
+        ),
+        indent=4
+    )
 
 
 def _document_diff(obj1, obj2):
@@ -156,8 +178,8 @@ def _document_diff(obj1, obj2):
     Return diff for Mongo documents or None objects
     """
     return _format_diff(_text_diff(
-        _document_json(obj1),
-        _document_json(obj2),
+        _document_json_string(obj1),
+        _document_json_string(obj2),
     ))
    
 
@@ -176,10 +198,8 @@ def diff(obj1, obj2):
     Return diff string corresponding to object type.
     """
     if _are_instance_or_none(obj1, obj2, Model):
-        print _model_diff(obj1, obj2)
         return _model_diff(obj1, obj2)
     elif _are_instance_or_none(obj1, obj2, Document):
-        print _document_diff(obj1, obj2)
         return _document_diff(obj1, obj2)
     elif obj1 is None and obj2 is None:
         return ''
@@ -190,18 +210,49 @@ def diff(obj1, obj2):
         )
 
 
-def get_history(obj):
+def get_simple_history(obj):
     """ Get the history for a specific object """
     if obj is None:
         return None
     elif isinstance(obj, Model):
+
         content_type = ContentType.objects.get_for_model(obj)
         object_id = obj.pk
-        hist = LogEntry.objects.filter(
-            content_type=content_type,
+
+        # Ordering is -action_time, so first is most recent
+        addition_qrs = LogEntry.objects.filter(
             object_id=object_id,
+            content_type=content_type,
+            action_flag=LIZARD_ADDITION
         )
-        print hist
+        try:
+            created = addition_qrs[0]
+            created_by = created.user
+            datetime_created = created.action_time
+        except IndexError:
+            created_by = None
+            datetime_created = None
+            
+        change_qrs = LogEntry.objects.filter(
+            object_id=object_id,
+            content_type=content_type,
+            action_flag=LIZARD_CHANGE
+        )
+        try:
+            modified = change_qrs[0]
+            modified_by = modified.user
+            datetime_modified = modified.action_time
+        except IndexError:
+            modified_by = None
+            datetime_modified = None
+
+        simple_history = {
+            'datetime_created': datetime_created,
+            'created_by': created_by,
+            'datetime_modified': datetime_modified,
+            'modified_by': modified_by,
+        }
+        print simple_history
         return 'django!'
 
     elif isinstance(obj, Document):

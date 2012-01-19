@@ -7,6 +7,8 @@ Changelog of lizard-history
 
 - Adds method get_history to retrieve history for objects from LogEntry
 
+- Changes change_text to parseable json for django models
+
 
 0.1.1 (2011-12-07)
 ------------------
