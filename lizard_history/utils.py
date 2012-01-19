@@ -22,6 +22,13 @@ import difflib
 import hashlib
 import re
 
+def user_pk():
+    """ Determine the user for this request."""
+    if isinstance(request.user, AnonymousUser):
+        # Get the first superuser
+        return User.objects.filter(is_superuser=True)[0].pk
+    return request.user.pk
+
 
 def object_hash(obj, use_time=True):
     """
@@ -37,7 +44,7 @@ def object_hash(obj, use_time=True):
     return sha1.hexdigest()
 
 
-def _django_object_json(obj):
+def _model_json(obj):
     """
     Return a dict representing the django model.
 
@@ -56,7 +63,7 @@ def _django_object_json(obj):
     return single_obj_json
 
 
-def _mongo_object_json(obj):
+def _document_json(obj):
     """
     Return a dict representing a mongoengine document.
     """
@@ -68,25 +75,6 @@ def _mongo_object_json(obj):
         indent=4,
     )
     return obj_json
-
-
-def to_json(obj):
-    """
-    Return json corresponding to obj type.
-
-    Currently supported are django and mongoengine models. If obj is None,
-    return the empty string.
-    """
-    if obj is None:
-        return ''
-    elif isinstance(obj, Model):
-        return _django_object_json(obj)
-    elif isinstance(obj, Document):
-        return _mongo_object_json(obj)
-    else:
-        raise NotImplementedError(
-            'Only django and mongoengine models are currently implemented',
-        )
 
 
 def get_contenttype_id(obj):
@@ -119,7 +107,7 @@ def _clean_mongo_document_dict(obj):
             obj[key] = str(value)
 
 
-def diff(str1, str2):
+def _text_diff(str1, str2):
     """
     Return a context_diff with no context.
     """
@@ -130,13 +118,10 @@ def diff(str1, str2):
     ))
 
 
-def format_diff(diff):
+def _format_diff(diff):
     """
     Return a multiline diff string.
     """
-    import logging
-    from pprint import pformat
-
     result = ''
     for line in diff[3:]:
         line = re.sub('^[!+-]', '', line)
@@ -150,12 +135,51 @@ def format_diff(diff):
     return result
 
 
-def user_pk():
-    """ Determine the user for this request."""
-    if isinstance(request.user, AnonymousUser):
-        # Get the first superuser
-        return User.objects.filter(is_superuser=True)[0].pk
-    return request.user.pk
+def _model_diff(obj1, obj2):
+    """
+    Return diff for Django models or None objects
+    """
+    return _format_diff(_text_diff(
+        _mongo_object_json(obj1),
+        _mongo_object_json(obj2),
+    )
+
+
+def _document_diff(obj1, obj2):
+    """
+    Return diff for Mongo documents or None objects
+    """
+    return _format_diff(_text_diff(
+        _mongo_object_json(obj1),
+        _mongo_object_json(obj2),
+    )
+   
+
+def _are_instance_or_none(obj1, obj2, klass):
+    """
+    Return True if one or both objects are instance of klass
+    and the other is None.
+    """
+    return (isinstance(obj1, klass) and isinstance(obj2, klass) or
+            isinstance(obj1, klass) and obj2 is None or
+            isinstance(obj2, klass) and obj1 is None)
+            
+
+def diff(obj1, obj2):
+    """
+    Return diff string corresponding to object type.
+    """
+    if are_instance_or_none(obj2, Model):
+        return _django_diff(obj1, obj2)
+    elif are_instance_or_none(obj2, Document):
+        print _mongo_diff(obj1, obj2)
+        return _mongo_diff(obj1, obj2)
+    elif obj1 is None and obj2 is None:
+        return ''
+    else:
+        raise NotImplementedError(
+            'Only django and mongoengine models are currently implemented',
+        )
 
 
 def get_history(obj):

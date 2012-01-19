@@ -54,16 +54,11 @@ def post_save_handler(sender, obj):
     else:
         action_flag = ADDITION
 
-    diff = utils.diff(
-        utils.to_json(original),
-        utils.to_json(obj),
-    )
+    change_message = utils.diff(original, obj)
 
     # Don't log if nothing was changed.
-    if not diff:
+    if not change_message:
         return
-
-    change_message = format_diff(diff)
 
     # Insert a log entry in django's admin log.
     LogEntry.objects.log_action(
@@ -85,11 +80,7 @@ def post_delete_handler(sender, obj):
 
     # Set action_flag and change message
     action_flag = DELETION
-    diff = utils.diff(
-        utils.to_json(obj),
-        utils.to_json(None),
-    )
-    change_message = format_diff(diff)
+    change_message = utils.diff(obj, None)
 
     # Insert a log entry in django's admin log.
     LogEntry.objects.log_action(
