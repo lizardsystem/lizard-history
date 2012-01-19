@@ -51,6 +51,9 @@ def _model_json(obj):
     Django's serializer works on iterables, here we want a single
     object. Therefore it gets loaded and dumped again.
     """
+    if obj is None:
+        return ''
+
     obj_json = serialize(
         'json',
         [obj],
@@ -67,6 +70,9 @@ def _document_json(obj):
     """
     Return a dict representing a mongoengine document.
     """
+    if obj is None:
+        return ''
+
     obj_mongo = obj.to_mongo()
     _clean_mongo_document_dict(obj_mongo)
     obj_json = simplejson.dumps(
@@ -140,9 +146,9 @@ def _model_diff(obj1, obj2):
     Return diff for Django models or None objects
     """
     return _format_diff(_text_diff(
-        _mongo_object_json(obj1),
-        _mongo_object_json(obj2),
-    )
+        _model_json(obj1),
+        _model_json(obj2),
+    ))
 
 
 def _document_diff(obj1, obj2):
@@ -150,9 +156,9 @@ def _document_diff(obj1, obj2):
     Return diff for Mongo documents or None objects
     """
     return _format_diff(_text_diff(
-        _mongo_object_json(obj1),
-        _mongo_object_json(obj2),
-    )
+        _document_json(obj1),
+        _document_json(obj2),
+    ))
    
 
 def _are_instance_or_none(obj1, obj2, klass):
@@ -169,16 +175,18 @@ def diff(obj1, obj2):
     """
     Return diff string corresponding to object type.
     """
-    if are_instance_or_none(obj2, Model):
-        return _django_diff(obj1, obj2)
-    elif are_instance_or_none(obj2, Document):
-        print _mongo_diff(obj1, obj2)
-        return _mongo_diff(obj1, obj2)
+    if _are_instance_or_none(obj1, obj2, Model):
+        print _model_diff(obj1, obj2)
+        return _model_diff(obj1, obj2)
+    elif _are_instance_or_none(obj1, obj2, Document):
+        print _document_diff(obj1, obj2)
+        return _document_diff(obj1, obj2)
     elif obj1 is None and obj2 is None:
         return ''
     else:
         raise NotImplementedError(
-            'Only django and mongoengine models are currently implemented',
+            'Only django and mongoengine models '
+            'are currently implemented',
         )
 
 

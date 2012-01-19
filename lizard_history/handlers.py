@@ -7,7 +7,6 @@ from django.contrib.admin.models import CHANGE
 from django.contrib.admin.models import DELETION
 
 from lizard_history.utils import object_hash
-from lizard_history.utils import format_diff
 from lizard_history.utils import user_pk
 from lizard_history import utils
 
