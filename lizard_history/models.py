@@ -7,6 +7,7 @@ from mongoengine.signals import post_delete as mongo_post_delete
 from django.db.models.signals import pre_save as django_pre_save
 from django.db.models.signals import post_save as django_post_save
 from django.db.models.signals import post_delete as django_post_delete
+from django.db.models.signals import m2m_changed as django_m2m_changed
 
 from django.db import models
 from django.db.utils import DatabaseError
@@ -87,6 +88,26 @@ def django_post_delete_handler(sender, instance, **kwargs):
         return
 
     post_delete_handler(sender, instance)
+
+
+@receiver(django_m2m_changed)
+def django_m2m_changed_handler(sender, instance, action,
+                               reverse, model, pk_set, **kwargs):
+    """
+    Handle change_m2m signal.
+    """
+    pass
+#   print sender
+#   print instance
+#   print action
+#   print reverse
+#   print model
+#   print pk_set
+#   print kwargs
+#   if not _is_monitored(instance):
+#       return
+
+#   change_m2m_handler(sender, instance)
 
 
 @receiver(mongo_pre_save)
