@@ -4,6 +4,7 @@ from django.db.models import Model
 from mongoengine import Document
 
 from django.utils import simplejson
+from django.utils.translation import ugettext as _
 
 from django.core.serializers import serialize
 
@@ -250,6 +251,50 @@ def get_simple_history(obj):
             'modified_by': str(modified_by),
         }
         return simple_history
+
+    else:
+        raise NotImplementedError(
+            'Only django models are currently implemented',
+        )
+
+def _log_entry_to_dict(log_entry):
+    """ Return a dict with selected info from log_entry """
+    changes = simplejson.loads(log_entry.change_message)
+
+    action_flag_mapping = {
+        LIZARD_CHANGE: _('Changed'),
+        LIZARD_ADDITION: _('Created'),
+        LIZARD_DELETION: _('Deleted'),
+    }
+
+    result = {
+        'action': action_flag_mapping[log_entry.action_flag],
+        'user': str(log_entry.user),
+        'datetime': str(log_entry.action_time),
+        'changes': {k: v['new'] for k, v in changes.items()},
+    }
+
+
+
+    return result
+
+
+def get_full_history(obj):
+    """ Get full history for a specific object """
+    if obj is None:
+        return None
+    elif isinstance(obj, Model):
+
+        content_type = ContentType.objects.get_for_model(obj)
+        object_id = obj.pk
+
+        entries = LogEntry.objects.filter(
+            object_id=object_id,
+            content_type=content_type,
+            action_flag__in=[LIZARD_ADDITION, LIZARD_CHANGE, LIZARD_DELETION],
+        )
+
+        return [_log_entry_to_dict(l) for l in entries]
 
     else:
         raise NotImplementedError(

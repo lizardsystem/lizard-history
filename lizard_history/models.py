@@ -123,13 +123,22 @@ def mongo_post_delete_handler(sender, document, *args, **kwargs):
 
 
 class MonitoredModel(models.Model):
-    name = models.CharField(max_length=100)
-    app_label = models.CharField(max_length=100)
-    model = models.CharField(_('python model class name'), max_length=100)
+    name = models.CharField(
+        max_length=100,
+        verbose_name=_('Name'),
+    )
+    app_label = models.CharField(
+        max_length=100,
+        verbose_name=_('App label'),
+    )
+    model = models.CharField(
+        max_length=100,
+        verbose_name=_('Django model name'),
+    )
 
     class Meta:
-        verbose_name = _('monitored model')
-        verbose_name_plural = _('monitored models')
+        verbose_name = _('Monitored model')
+        verbose_name_plural = _('Monitored models')
         ordering = ('app_label', 'model',)
         unique_together = (('app_label', 'model'),)
 
