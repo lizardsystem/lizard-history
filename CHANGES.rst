@@ -5,7 +5,9 @@ Changelog of lizard-history
 0.2 (unreleased)
 ----------------
 
-- Adds method get_history to retrieve history for objects from LogEntry
+- Adds method get_simple_history to retrieve history for objects from LogEntry
+
+- Adds method get_full_history to retrieve history for objects from LogEntry
 
 - Changes change_text to parseable json for django models
 
