@@ -247,13 +247,12 @@ def get_simple_history(obj):
             datetime_modified = None
 
         simple_history = {
-            'datetime_created': datetime_created,
-            'created_by': created_by,
-            'datetime_modified': datetime_modified,
-            'modified_by': modified_by,
+            'datetime_created': str(datetime_created),
+            'created_by': str(created_by),
+            'datetime_modified': str(datetime_modified),
+            'modified_by': str(modified_by),
         }
-        print simple_history
-        return 'django!'
+        return simple_history
 
     elif isinstance(obj, Document):
         return 'mongo!'
