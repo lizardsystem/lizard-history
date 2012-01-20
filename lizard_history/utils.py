@@ -219,30 +219,27 @@ def get_simple_history(obj):
         content_type = ContentType.objects.get_for_model(obj)
         object_id = obj.pk
 
-        # Ordering is -action_time, so first is most recent
-        addition_qrs = LogEntry.objects.filter(
-            object_id=object_id,
-            content_type=content_type,
-            action_flag=LIZARD_ADDITION
-        )
         try:
-            created = addition_qrs[0]
+            created = LogEntry.objects.filter(
+                object_id=object_id,
+                content_type=content_type,
+                action_flag=LIZARD_ADDITION
+            ).latest('action_time')
             created_by = created.user
             datetime_created = created.action_time
-        except IndexError:
+        except LogEntry.DoesNotExist:
             created_by = None
             datetime_created = None
             
-        change_qrs = LogEntry.objects.filter(
-            object_id=object_id,
-            content_type=content_type,
-            action_flag=LIZARD_CHANGE
-        )
         try:
-            modified = change_qrs[0]
+            modified = LogEntry.objects.filter(
+                object_id=object_id,
+                content_type=content_type,
+                action_flag=LIZARD_CHANGE
+            ).latest('action_time')
             modified_by = modified.user
             datetime_modified = modified.action_time
-        except IndexError:
+        except LogEntry.DoesNotExist:
             modified_by = None
             datetime_modified = None
 
@@ -254,9 +251,7 @@ def get_simple_history(obj):
         }
         return simple_history
 
-    elif isinstance(obj, Document):
-        return 'mongo!'
     else:
         raise NotImplementedError(
-            'Only django and mongoengine models are currently implemented',
+            'Only django models are currently implemented',
         )
