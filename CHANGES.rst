@@ -2,8 +2,8 @@ Changelog of lizard-history
 ===================================================
 
 
-0.3 (unreleased)
-----------------
+0.2.1 (2012-01-23)
+------------------
 
 - Removes use of dictionary comprehension (Python 2.7 and higher)
 
