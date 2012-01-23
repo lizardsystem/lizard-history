@@ -271,7 +271,8 @@ def _log_entry_to_dict(log_entry):
         'action': action_flag_mapping[log_entry.action_flag],
         'user': str(log_entry.user),
         'datetime': str(log_entry.action_time),
-        'changes': {k: v['new'] for k, v in changes.items()},
+        'changes': dict([(k, v['new'])
+                         for k, v in changes.items()]),
     }
 
 
