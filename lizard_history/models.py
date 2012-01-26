@@ -28,6 +28,7 @@ from django.utils.translation import ugettext_lazy as _
 from lizard_history.handlers import pre_save_handler
 from lizard_history.handlers import post_save_handler
 from lizard_history.handlers import post_delete_handler
+from lizard_history.handlers import m2m_changed_handler
 
 import lizard_history.configchecker
 lizard_history.configchecker  # Pyflakes...
@@ -42,6 +43,7 @@ EXCLUDED_MODELS = [
     MigrationHistory,
     User
 ]
+
 
 def _is_monitored(sender):
     """
@@ -96,18 +98,11 @@ def django_m2m_changed_handler(sender, instance, action,
     """
     Handle change_m2m signal.
     """
-    pass
-#   print sender
-#   print instance
-#   print action
-#   print reverse
-#   print model
-#   print pk_set
-#   print kwargs
-#   if not _is_monitored(instance):
-#       return
+    if not _is_monitored(instance.__class__):
+        return
 
-#   change_m2m_handler(sender, instance)
+    m2m_changed_handler(sender, instance, action,
+                        reverse, model, pk_set, **kwargs)
 
 
 @receiver(mongo_pre_save)
