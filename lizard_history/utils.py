@@ -64,6 +64,7 @@ def _model_dict(obj):
         [obj],
     )
     model_dict = simplejson.loads(obj_json)[0]['fields']
+    print model_dict
     return model_dict
 
 

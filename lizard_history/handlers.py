@@ -49,8 +49,8 @@ def post_save_handler(sender, obj):
         return
 
     # If models with m2m fields are handled by the m2m_changed_handler
-    if obj._meta.many_to_many:
-        return
+#   if obj._meta.many_to_many:
+#       return
 
     # Retrieve the original object from the request, if any
     original = request.lizard_history.get(obj._lizard_history_hash)
@@ -109,8 +109,10 @@ def m2m_changed_handler(sender, instance, action,
 #   print sender
 #   print instance
     print action
-#   print reverse
+    print reverse
 #   print model
     print pk_set
-#   print kwargs
+    from lizard_history.utils import _model_dict
+    print _model_dict(instance)
+    print kwargs
     print '------------------------------'
