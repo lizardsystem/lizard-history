@@ -56,7 +56,11 @@ def post_save_handler(sender, obj):
     else:
         action_flag = LIZARD_ADDITION
 
-    change_message = utils.diff(original, obj)
+    change_message = utils.change_message(
+        obj1=original,
+        obj2=obj,
+        summary=getattr(obj, 'lizard_history_summary', ''),
+    )
 
     # Don't log if nothing was changed.
     if not change_message:
@@ -82,7 +86,11 @@ def post_delete_handler(sender, obj):
 
     # Set action_flag and change message
     action_flag = LIZARD_DELETION
-    change_message = utils.diff(obj, None)
+    change_message = utils.change_message(
+        obj1=obj,
+        obj2=None,
+        summary=getattr(obj, 'lizard_history_summary', ''),
+    )
 
     # Insert a log entry in django's admin log.
     LogEntry.objects.log_action(

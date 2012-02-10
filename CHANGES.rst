@@ -5,7 +5,7 @@ Changelog of lizard-history
 0.2.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Add handling of optional 'lizard_history_summary' attribute on saved object.
 
 
 0.2.1 (2012-01-23)

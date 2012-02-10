@@ -165,12 +165,9 @@ def _model_diff(obj1, obj2):
     """
     Return diff for Django models or None objects
     """
-    return simplejson.dumps(
-        _dict_diff(
-            _model_dict(obj1),
-            _model_dict(obj2),
-        ),
-        indent=4
+    return _dict_diff(
+        _model_dict(obj1),
+        _model_dict(obj2),
     )
 
 
@@ -194,9 +191,9 @@ def _are_instance_or_none(obj1, obj2, klass):
             isinstance(obj2, klass) and obj1 is None)
             
 
-def diff(obj1, obj2):
+def _diff(obj1, obj2):
     """
-    Return diff string corresponding to object type.
+    Return diff object corresponding to object type.
     """
     if _are_instance_or_none(obj1, obj2, Model):
         return _model_diff(obj1, obj2)
@@ -209,6 +206,19 @@ def diff(obj1, obj2):
             'Only django and mongoengine models '
             'are currently implemented',
         )
+
+        
+def change_message(obj1, obj2, summary):
+    """
+    Return a suitable change message
+    """
+    return simplejson.dumps(
+        {
+            'changes': _diff(obj1, obj2),
+            'summary': summary,
+        },
+        indent=2
+    )
 
 
 def get_simple_history(obj):
@@ -259,7 +269,9 @@ def get_simple_history(obj):
 
 def _log_entry_to_dict(log_entry):
     """ Return a dict with selected info from log_entry """
-    changes = simplejson.loads(log_entry.change_message)
+    data = simplejson.loads(log_entry.change_message)
+    changes = data['changes']
+    summary = data['summary']
 
     action_flag_mapping = {
         LIZARD_CHANGE: _('Changed'),
@@ -271,11 +283,10 @@ def _log_entry_to_dict(log_entry):
         'action': action_flag_mapping[log_entry.action_flag],
         'user': str(log_entry.user),
         'datetime': str(log_entry.action_time),
+        'summary': summary,
         'changes': dict([(k, v['new'])
                          for k, v in changes.items()]),
     }
-
-
 
     return result
 
