@@ -124,3 +124,9 @@ def m2m_changed_handler(sender, instance, action,
     print _model_dict(instance)
     print kwargs
     print '------------------------------'
+
+def request_ended_handler():
+    """
+    Save all changes in the context of this request into the logentry
+    """
+    pass

@@ -7,7 +7,10 @@ from mongoengine.signals import post_delete as mongo_post_delete
 from django.db.models.signals import pre_save as django_pre_save
 from django.db.models.signals import post_save as django_post_save
 from django.db.models.signals import post_delete as django_post_delete
-from django.db.models.signals import m2m_changed as django_m2m_changed
+
+from django.db.models.signals import m2m_changed
+from django.core.signals import request_finished
+from django.core.signals import got_request_exception
 
 from django.db import models
 from django.db.utils import DatabaseError
@@ -23,12 +26,12 @@ from django.contrib.sites.models import Site
 from south.models import MigrationHistory
 
 from django.utils.translation import ugettext_lazy as _
-# from django.utils.db import DatabaseError
 
 from lizard_history.handlers import pre_save_handler
 from lizard_history.handlers import post_save_handler
 from lizard_history.handlers import post_delete_handler
 from lizard_history.handlers import m2m_changed_handler
+from lizard_history.handlers import request_ended_handler
 
 import lizard_history.configchecker
 lizard_history.configchecker  # Pyflakes...
@@ -36,12 +39,12 @@ lizard_history.configchecker  # Pyflakes...
 # Some models are excluded here since they are involved in the process
 # of setting up the site
 EXCLUDED_MODELS = [
-    LogEntry,  # Prevent a loop
+    MigrationHistory,
     ContentType,
     Permission,
+    LogEntry,  # Prevent a loop
     Site,
-    MigrationHistory,
-    User
+    User,
 ]
 
 
@@ -92,19 +95,6 @@ def django_post_delete_handler(sender, instance, **kwargs):
     post_delete_handler(sender, instance)
 
 
-@receiver(django_m2m_changed)
-def django_m2m_changed_handler(sender, instance, action,
-                               reverse, model, pk_set, **kwargs):
-    """
-    Handle change_m2m signal.
-    """
-    if not _is_monitored(instance.__class__):
-        return
-
-    m2m_changed_handler(sender, instance, action,
-                        reverse, model, pk_set, **kwargs)
-
-
 @receiver(mongo_pre_save)
 def mongo_pre_save_handler(sender, document, **kwargs):
     """
@@ -136,6 +126,35 @@ def mongo_post_delete_handler(sender, document, *args, **kwargs):
         return
 
     post_delete_handler(sender, document)
+
+
+@receiver(m2m_changed)
+def m2m_changed_receiver(sender, instance, action,
+                         reverse, model, pk_set, **kwargs):
+    """
+    Handle change_m2m signal.
+    """
+    if not _is_monitored(instance.__class__):
+        return
+
+    m2m_changed_handler(sender, instance, action,
+                        reverse, model, pk_set, **kwargs)
+
+
+@receiver(request_finished)
+def request_finished_receiver(sender, **kwargs):
+    """
+    Handle request_finished signal.
+    """
+    request_ended_handler()
+
+
+@receiver(got_request_exception)
+def got_request_exception_receiver(sender, **kwargs):
+    """
+    Handle request_finished signal.
+    """
+    request_ended_handler()
 
 
 class MonitoredModel(models.Model):
