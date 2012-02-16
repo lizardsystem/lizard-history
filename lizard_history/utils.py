@@ -285,6 +285,7 @@ def _log_entry_to_dict(log_entry):
         'user': str(log_entry.user),
         'datetime': str(log_entry.action_time),
         'summary': summary,
+        'log_entry_id': log_entry.pk,
         'changes': dict([(k, v['new'])
                          for k, v in changes.items()]),
     }
@@ -292,11 +293,15 @@ def _log_entry_to_dict(log_entry):
     return result
 
 
-def get_full_history(obj):
-    """ Get full history for a specific object """
-    if obj is None:
-        return None
-    elif isinstance(obj, Model):
+def get_history(obj=None, log_entry_id=None):
+    """
+    Return full history for obj or changes for log_entry_id
+    """
+    if log_entry_id:
+        log_entry = LogEntry.objects.get(pk=log_entry_id)
+        return _log_entry_to_dict(log_entry)
+
+    if isinstance(obj, Model):
 
         content_type = ContentType.objects.get_for_model(obj)
         object_id = obj.pk
@@ -309,7 +314,6 @@ def get_full_history(obj):
 
         return [_log_entry_to_dict(l) for l in entries]
 
-    else:
-        raise NotImplementedError(
-            'Only django models are currently implemented',
-        )
+    raise NotImplementedError(
+        'Only django models are currently implemented',
+    )

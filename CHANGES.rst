@@ -5,7 +5,9 @@ Changelog of lizard-history
 0.2.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Remove get_full_history method
+
+- Add get_history method that can return full history or single logentry
 
 
 0.2.2 (2012-02-13)
