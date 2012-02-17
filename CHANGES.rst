@@ -2,7 +2,7 @@ Changelog of lizard-history
 ===================================================
 
 
-0.2.3 (unreleased)
+0.2.3 (2012-02-17)
 ------------------
 
 - Remove get_full_history method
