@@ -59,6 +59,9 @@ def _model_dict(obj):
     if obj is None:
         return {}
 
+    # Unfortunately, the presave trigger comes before django's own
+    # full cleaning, so serialize fails if datetime is a string.
+    obj.full_clean()
     obj_json = serialize(
         'json',
         [obj],
