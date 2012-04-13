@@ -2,7 +2,7 @@ Changelog of lizard-history
 ===================================================
 
 
-0.2.4 (unreleased)
+0.2.4 (2012-04-13)
 ------------------
 
 - Add cleaning to pre_save handler to fix serialization of unsaved objects.
