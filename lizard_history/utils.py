@@ -1,7 +1,6 @@
 # (c) Nelen & Schuurmans.  GPL licensed, see LICENSE.txt.
 
 from django.db.models import Model
-from mongoengine import Document
 
 from django.utils import simplejson
 from django.utils.translation import ugettext as _
@@ -13,8 +12,6 @@ from django.contrib.admin.models import LogEntry
 
 from django.contrib.auth.models import User
 from django.contrib.auth.models import AnonymousUser
-
-from pymongo import json_util
 
 from tls import request
 
@@ -69,23 +66,6 @@ def _model_dict(obj):
     model_dict = simplejson.loads(obj_json)[0]['fields']
     print model_dict
     return model_dict
-
-
-def _document_json_string(obj):
-    """
-    Return a json string representing a mongoengine document.
-    """
-    if obj is None:
-        return ''
-
-    obj_mongo = obj.to_mongo()
-    _clean_mongo_document_dict(obj_mongo)
-    obj_json = simplejson.dumps(
-        obj_mongo,
-        default=json_util.default,
-        indent=4,
-    )
-    return obj_json
 
 
 def get_contenttype_id(obj):

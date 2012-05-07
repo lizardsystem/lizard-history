@@ -12,13 +12,11 @@ long_description = '\n\n'.join([
 install_requires = [
     'Django',
     'django-extensions',
+    'django-load',
     'django-nose',
+    'django-tls',
     'lizard-ui >= 3.0',
     'pkginfo',
-    'django-tls',
-    'mongoengine',
-    'pymongo',
-    'blinker',
     'south',
     ],
 

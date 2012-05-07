@@ -5,7 +5,8 @@ Changelog of lizard-history
 0.2.5 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Add specific signal and middleware for history.
+- Rework the handlers to get simpler code.
 
 
 0.2.4 (2012-04-13)

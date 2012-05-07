@@ -1,57 +1,68 @@
 # (c) Nelen & Schuurmans.  GPL licensed, see LICENSE.txt.
 from django.utils.encoding import force_unicode
+from django.utils.translation import ugettext_lazy as _
 
 from django.contrib.admin.models import LogEntry
-
-from lizard_history.utils import LIZARD_ADDITION
-from lizard_history.utils import LIZARD_CHANGE
-from lizard_history.utils import LIZARD_DELETION
-from lizard_history.utils import object_hash
-from lizard_history.utils import user_pk
 from lizard_history import utils
-
 from tls import request
 
 
-# We take other values than Django to distuingish from
-# Django's own entries.
-
-def pre_save_handler(sender, obj):
+def db_handler(sender, instance, **kwargs):
     """
-    Store the original object on the request if it exists.
+    Store old and new objects on the request.
     """
-    if not request:
+    if not request or kwargs.get('raw', False):
         return
 
-    obj._lizard_history_hash = object_hash(obj)
+    if kwargs.get('name').startswith('pre'):
+
+        # Give object a unique id.
+        instance._lizard_history_hash = utils.object_hash(instance)
+        
+        
+        # Try to retrieve old version from database.
+        if instance.pk is None:
+            old = None
+        else:
+            try:
+                old = sender.objects.get(pk=instance.pk)
+            except sender.DoesNotExist:
+                old = None
+
+        # Store the original object on the request
+        if not hasattr(request, 'lizard_history'):
+            request.lizard_history = {}
+        request.lizard_history.update({
+            instance._lizard_history_hash: {
+                'old': old,
+                'phase': kwargs.get('name'),
+            }
+        })
+
+    if kwargs.get('name').startswith('post_'):
+        request.lizard_history[instance._lizard_history_hash].update({
+            'new': instance if kwargs.get('name') == 'post_save' else None,
+            'phase': kwargs.get('name'),
+        })
+
+def request_handler(**kwargs):
+    """
+    Log any changes recorded on the request object.
+    """
     if not hasattr(request, 'lizard_history'):
-        request.lizard_history = {}
-
-    if obj.pk is None:
-        original = None
-    else:
-        try:
-            original = sender.objects.get(pk=obj.pk)
-        except sender.DoesNotExist:
-            original = None
-
-    # Store the original object on the request
-    request.lizard_history.update({
-        obj._lizard_history_hash: original,
-    })
-
-
-def post_save_handler(sender, obj):
-    """
-    Log a change or addition of an object in the logentry.
-    """
-    if not request:
         return
 
-    # If models with m2m fields are handled by the m2m_changed_handler
-#   if obj._meta.many_to_many:
-#       return
+        
+    from pprint import pprint
+    pprint(request.lizard_history)
+    for action in request.lizard_history.items():
+        pass
 
+
+def request_ended_handler(sender):
+    """
+    Save all changes in the context of this request into the logentry
+    """
     # Retrieve the original object from the request, if any
     original = request.lizard_history.get(obj._lizard_history_hash)
 
@@ -79,14 +90,7 @@ def post_save_handler(sender, obj):
         action_flag=action_flag,
         change_message=change_message,
     )
-
-
-def post_delete_handler(sender, obj):
-    """
-    Log the deletion of an object in the logentry.
-    """
-    if not request:
-        return
+    """ Deletion """
 
     # Set action_flag and change message
     action_flag = LIZARD_DELETION
@@ -105,28 +109,3 @@ def post_delete_handler(sender, obj):
         action_flag=action_flag,
         change_message=change_message,
     )
-
-def m2m_changed_handler(sender, instance, action,
-                        reverse, model, pk_set, **kwargs):
-    """
-    Log the change of a m2m relation of an object in the logentry.
-    """
-    if not request:
-        return
-    print '------------------------------'
-#   print sender
-#   print instance
-    print action
-    print reverse
-#   print model
-    print pk_set
-    from lizard_history.utils import _model_dict
-    print _model_dict(instance)
-    print kwargs
-    print '------------------------------'
-
-def request_ended_handler():
-    """
-    Save all changes in the context of this request into the logentry
-    """
-    pass
