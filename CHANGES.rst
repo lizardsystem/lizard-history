@@ -10,6 +10,7 @@ Changelog of lizard-history
 - Add view for object_api's for use in vss.
 - Remove old mongo code.
 - Implement deletion logging.
+- Add templatetag for formatting logged datetimes.
 
 
 
