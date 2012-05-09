@@ -4,7 +4,6 @@ from djangorestframework.response import Response
 from djangorestframework.views import View
 from djangorestframework import status
 from lizard_history import utils
-from django.utils import simplejson
 
 
 class ApiObjectView(View):
@@ -13,13 +12,12 @@ class ApiObjectView(View):
     """
     def get(self, request, log_entry_id):
         if request.user.is_anonymous():
-            return Response(status.HTTP_403_FORBIDDEN)  
+            return Response(status.HTTP_403_FORBIDDEN)
         history = utils.get_history(
             log_entry_id=log_entry_id,
         )
 
         if 'api_object' in history:
             return history['api_object']
-        
-        return Response(status.HTTP_404_NOT_FOUND)
 
+        return Response(status.HTTP_404_NOT_FOUND)

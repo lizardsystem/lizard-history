@@ -1,6 +1,5 @@
 # (c) Nelen & Schuurmans.  GPL licensed, see LICENSE.txt.
 from django.utils.encoding import force_unicode
-from django.utils.translation import ugettext_lazy as _
 
 from django.contrib.admin.models import LogEntry
 from lizard_history import utils
@@ -18,8 +17,7 @@ def db_handler(sender, instance, **kwargs):
 
         # Give object a unique id.
         instance._lizard_history_hash = utils.object_hash(instance)
-        
-        
+
         # Try to retrieve old version from database.
         if instance.pk is None:
             old = None
@@ -45,6 +43,7 @@ def db_handler(sender, instance, **kwargs):
             'phase': kwargs.get('name'),
         })
 
+
 def process_request_handler(**kwargs):
     """
     Log any changes recorded on the request object.
@@ -52,11 +51,9 @@ def process_request_handler(**kwargs):
     if not hasattr(request, 'lizard_history'):
         return
 
-    from pprint import pprint
-
     for action in request.lizard_history.values():
         if action['phase'] == 'post_save':
-            
+
             if action['old'] is not None:
                 action_flag = utils.LIZARD_CHANGE
             else:

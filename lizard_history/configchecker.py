@@ -8,9 +8,6 @@ logger = logging.getLogger(__name__)
 @configchecker.register
 def checker():  # Pragma: nocover
     """Verify lizard_history's demands on settings.py."""
-    
-
-
 
     if (
         'tls.TLSRequestMiddleware' in
@@ -21,7 +18,7 @@ def checker():  # Pragma: nocover
         if (
             settings.MIDDLEWARE_CLASSES.index(
                 'tls.TLSRequestMiddleware',
-            ) > 
+            ) >
             settings.MIDDLEWARE_CLASSES.index(
                 'lizard_history.middleware.HistoryMiddleware',
             )
@@ -45,6 +42,3 @@ def checker():  # Pragma: nocover
                 "to the list of MIDDLEWARE_CLASSES for the lizard_history "
                 "djangoapp to work."
             )
-        
-
-

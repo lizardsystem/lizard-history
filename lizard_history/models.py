@@ -34,6 +34,7 @@ EXCLUDED_MODELS = [
 
 signals.ops_done.connect(handlers.process_request_handler)
 
+
 def _is_monitored(sender):
     """
     Return if the sender is to be monitored.

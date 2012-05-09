@@ -18,9 +18,7 @@ from tls import request
 
 from django_load.core import load_object
 import datetime
-import difflib
 import hashlib
-import re
 
 LIZARD_ADDITION = 4
 LIZARD_CHANGE = 5
@@ -60,7 +58,7 @@ def _model_dict(obj):
 
     # Unfortunately, the presave trigger comes before django's own
     # full cleaning, so serialize fails if datetime is a string.
-    # obj.full_clean()  # May be no problem anymore, since logging now afterwards.
+    # obj.full_clean()  # May be no problem since logging now afterwards.
     obj_json = serialize(
         'json',
         [obj],
@@ -85,7 +83,7 @@ def get_contenttype_id(obj):
 def _dict_diff(dict1, dict2):
     """
     Return a dict representing the difference.
-    
+
     Assumes two flat dicts.
     """
     keys = set(dict1.keys()) | set(dict2.keys())
@@ -118,7 +116,7 @@ def _are_instance_or_none(obj1, obj2, klass):
     return (isinstance(obj1, klass) and isinstance(obj2, klass) or
             isinstance(obj1, klass) and obj2 is None or
             isinstance(obj2, klass) and obj1 is None)
-            
+
 
 def _diff(obj1, obj2):
     """
@@ -129,10 +127,11 @@ def _diff(obj1, obj2):
     elif obj1 is None and obj2 is None:
         return {}
 
+
 def _api_object(obj):
     """
     Return the object as given by the api view.
-    
+
     This is defined view defined by the HISTORY_DATA_VIEW attribute.
     """
     view = load_object(obj.HISTORY_DATA_VIEW)
@@ -145,7 +144,7 @@ def _api_object(obj):
         'success': True,
     }
 
-        
+
 def change_message(obj1, obj2):
     """
     Return a suitable change message
@@ -183,7 +182,7 @@ def get_simple_history(obj):
     except LogEntry.DoesNotExist:
         created_by = None
         datetime_created = None
-        
+
     try:
         modified = LogEntry.objects.filter(
             object_id=object_id,
