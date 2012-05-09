@@ -45,51 +45,47 @@ def db_handler(sender, instance, **kwargs):
             'phase': kwargs.get('name'),
         })
 
-def request_handler(**kwargs):
+def process_request_handler(**kwargs):
     """
     Log any changes recorded on the request object.
     """
     if not hasattr(request, 'lizard_history'):
         return
 
-        
     from pprint import pprint
-    pprint(request.lizard_history)
-    for action in request.lizard_history.items():
-        pass
+
+    for action in request.lizard_history.values():
+        if action['phase'] == 'post_save':
+            
+            if action['old'] is not None:
+                action_flag = utils.LIZARD_CHANGE
+            else:
+                action_flag = utils.LIZARD_ADDITION
+
+            change_message = utils.change_message(
+                obj1=action['old'],
+                obj2=action['new'],
+            )
+
+            # Don't log if nothing was changed.
+            if not change_message:
+                return
+
+    # Insert a log entry in django's admin log.
+    LogEntry.objects.log_action(
+        user_id=utils.user_pk(),
+        content_type_id=utils.get_contenttype_id(action['new']),
+        object_id=action['new'].pk,
+        object_repr=force_unicode(action['new']),
+        action_flag=action_flag,
+        change_message=change_message,
+    )
 
 
 def request_ended_handler(sender):
     """
     Save all changes in the context of this request into the logentry
     """
-    # Retrieve the original object from the request, if any
-    original = request.lizard_history.get(obj._lizard_history_hash)
-
-    if original:
-        action_flag = LIZARD_CHANGE
-    else:
-        action_flag = LIZARD_ADDITION
-
-    change_message = utils.change_message(
-        obj1=original,
-        obj2=obj,
-        summary=getattr(obj, 'lizard_history_summary', ''),
-    )
-
-    # Don't log if nothing was changed.
-    if not change_message:
-        return
-
-    # Insert a log entry in django's admin log.
-    LogEntry.objects.log_action(
-        user_id=utils.user_pk(),
-        content_type_id=utils.get_contenttype_id(obj),
-        object_id=obj.pk,
-        object_repr=force_unicode(obj),
-        action_flag=action_flag,
-        change_message=change_message,
-    )
     """ Deletion """
 
     # Set action_flag and change message

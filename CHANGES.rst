@@ -7,6 +7,9 @@ Changelog of lizard-history
 
 - Add specific signal and middleware for history.
 - Rework the handlers to get simpler code.
+- Add view for object_api's for use in vss.
+- Remove old mongo code.
+
 
 
 0.2.4 (2012-04-13)

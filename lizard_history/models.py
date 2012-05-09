@@ -32,7 +32,7 @@ EXCLUDED_MODELS = [
     User,
 ]
 
-signals.ops_done.connect(handlers.request_handler)
+signals.ops_done.connect(handlers.process_request_handler)
 
 def _is_monitored(sender):
     """
@@ -40,7 +40,7 @@ def _is_monitored(sender):
     """
     if sender in EXCLUDED_MODELS:
         return False
-    print sender 
+
     return MonitoredModel.objects.filter(
         app_label=sender.__module__.split('.')[0],
         model=sender.__name__.lower(),
