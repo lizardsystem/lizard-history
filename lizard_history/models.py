@@ -51,35 +51,35 @@ def _is_monitored(sender):
 @receiver(models.signals.pre_save)
 def pre_save_handler(sender, instance, **kwargs):
     if _is_monitored(sender):
-        kwargs.update(name='pre_save')
+        kwargs.update(signal_name='pre_save')
         handlers.db_handler(sender, instance, **kwargs)
 
 
 @receiver(models.signals.post_save)
 def post_save_handler(sender, instance, **kwargs):
     if _is_monitored(sender):
-        kwargs.update(name='post_save')
+        kwargs.update(signal_name='post_save')
         handlers.db_handler(sender, instance, **kwargs)
 
 
 @receiver(models.signals.pre_delete)
 def pre_delete_handler(sender, instance, **kwargs):
     if _is_monitored(sender):
-        kwargs.update(name='pre_delete')
+        kwargs.update(signal_name='pre_delete')
         handlers.db_handler(sender, instance, **kwargs)
 
 
 @receiver(models.signals.post_delete)
 def post_delete_handler(sender, instance, **kwargs):
     if _is_monitored(sender):
-        kwargs.update(name='post_delete')
+        kwargs.update(signal_name='post_delete')
         handlers.db_handler(sender, instance, **kwargs)
 
 
 @receiver(models.signals.m2m_changed)
 def m2m_changed_handler(sender, instance, **kwargs):
     if _is_monitored(sender):
-        kwargs.update(name='m2m_changed')
+        kwargs.update(signal_name='m2m_changed')
         handlers.db_handler(sender, instance, **kwargs)
 
 

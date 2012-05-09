@@ -64,7 +64,6 @@ def _model_dict(obj):
         [obj],
     )
     model_dict = simplejson.loads(obj_json)[0]['fields']
-    print model_dict
     return model_dict
 
 
@@ -145,18 +144,25 @@ def _api_object(obj):
     }
 
 
-def change_message(obj1, obj2):
+def change_message(old_object, new_object, instance):
     """
-    Return a suitable change message
+    Return a suitable change message.
+
+    Any kwargs are added to the change message.
     """
     message_object = {
-        'changes': _diff(obj1, obj2),
+        'changes': _diff(old_object, new_object),
     }
 
-    if hasattr(obj2, 'lizard_history_summary'):
-        message_object.update(summary=obj2.lizard_history_summary)
-    if hasattr(obj2, 'HISTORY_DATA_VIEW'):
-        message_object.update(api_object=_api_object(obj2))
+    if hasattr(instance, 'lizard_history_summary'):
+        message_object.update(summary=instance.lizard_history_summary)
+    if hasattr(new_object, 'HISTORY_DATA_VIEW'):
+        message_object.update(api_object=_api_object(new_object))
+
+    # If there are no changes, we need no log.
+    if message_object == {'changes': {}}:
+        return None
+
     return simplejson.dumps(
         message_object,
         cls=DateTimeAwareJSONEncoder,
