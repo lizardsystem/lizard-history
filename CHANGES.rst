@@ -2,7 +2,7 @@ Changelog of lizard-history
 ===================================================
 
 
-0.2.5 (unreleased)
+0.2.5 (2012-05-10)
 ------------------
 
 - Add specific signal and middleware for history.
