@@ -13,6 +13,8 @@ def db_handler(sender, instance, **kwargs):
     if not request or kwargs.get('raw', False):
         return
 
+    print kwargs.get('signal_name')
+
     # Try to retrieve database version of instance.
     try:
         db_copy = sender.objects.get(pk=instance.pk)
@@ -42,9 +44,6 @@ def db_handler(sender, instance, **kwargs):
             'post_copy': db_copy,
             'signal_name': kwargs.get('signal_name'),
         })
-
-    if kwargs.get('signal_name') == 'm2m_changed':
-        pass
 
 
 def process_request_handler(**kwargs):
