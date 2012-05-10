@@ -2,7 +2,7 @@ Changelog of lizard-history
 ===================================================
 
 
-0.2.6 (unreleased)
+0.2.6 (2012-05-10)
 ------------------
 
 - Show full name or username if no full name in get_simple_history
