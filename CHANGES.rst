@@ -5,7 +5,8 @@ Changelog of lizard-history
 0.2.6 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Show full name or username if no full name in get_simple_history
+- Remove converting to str result for get_simple_history
 
 
 0.2.5 (2012-05-10)

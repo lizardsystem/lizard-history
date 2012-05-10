@@ -183,7 +183,7 @@ def get_simple_history(obj):
             content_type=content_type,
             action_flag=LIZARD_ADDITION
         ).latest('action_time')
-        created_by = created.user
+        created_by = created.user.get_full_name() or created.user
         datetime_created = created.action_time
     except LogEntry.DoesNotExist:
         created_by = None
@@ -195,18 +195,19 @@ def get_simple_history(obj):
             content_type=content_type,
             action_flag=LIZARD_CHANGE
         ).latest('action_time')
-        modified_by = modified.user
+        modified_by = modified.user.get_full_name() or modified.user
         datetime_modified = modified.action_time
     except LogEntry.DoesNotExist:
         modified_by = None
         datetime_modified = None
 
     simple_history = {
-        'datetime_created': str(datetime_created),
-        'created_by': str(created_by),
-        'datetime_modified': str(datetime_modified),
-        'modified_by': str(modified_by),
+        'datetime_created': datetime_created,
+        'created_by': created_by,
+        'datetime_modified': datetime_modified,
+        'modified_by': modified_by,
     }
+
     return simple_history
 
 
