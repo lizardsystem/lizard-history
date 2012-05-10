@@ -57,6 +57,9 @@ def pre_save_handler(sender, instance, **kwargs):
 
 @receiver(models.signals.post_save)
 def post_save_handler(sender, instance, **kwargs):
+    #print '************ Saving: *****************'
+    #print instance
+
     if _is_monitored(sender):
         kwargs.update(signal_name='post_save')
         handlers.db_handler(sender, instance, **kwargs)

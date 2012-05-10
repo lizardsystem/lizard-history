@@ -43,6 +43,9 @@ def db_handler(sender, instance, **kwargs):
             'signal_name': kwargs.get('signal_name'),
         })
 
+    if kwargs.get('signal_name') == 'm2m_changed':
+        pass
+
 
 def process_request_handler(**kwargs):
     """

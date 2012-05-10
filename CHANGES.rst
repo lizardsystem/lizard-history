@@ -13,7 +13,6 @@ Changelog of lizard-history
 - Add templatetag for formatting logged datetimes.
 
 
-
 0.2.4 (2012-04-13)
 ------------------
 
