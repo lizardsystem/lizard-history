@@ -3,6 +3,7 @@ from django.utils.encoding import force_unicode
 
 from django.contrib.admin.models import LogEntry
 from lizard_history import utils
+from lizard_esf.models import AreaConfiguration
 from tls import request
 
 
@@ -12,8 +13,6 @@ def db_handler(sender, instance, **kwargs):
     """
     if not request or kwargs.get('raw', False):
         return
-
-    print kwargs.get('signal_name')
 
     # Try to retrieve database version of instance.
     try:
@@ -49,11 +48,18 @@ def db_handler(sender, instance, **kwargs):
 def process_request_handler(**kwargs):
     """
     Log any changes recorded on the request object.
+
+    The esf-tree is a special case, the change_message will contain all
+    objects so we only need to write it once.
     """
     if not hasattr(request, 'lizard_history'):
         return
 
+    # Esf tree special case
+    esf_tree_logged = False
+
     for action in request.lizard_history.values():
+
         if action['signal_name'] == 'post_save':
 
             obj = action['post_copy']
@@ -66,6 +72,16 @@ def process_request_handler(**kwargs):
 
             obj = action['pre_copy']
             action_flag = utils.LIZARD_DELETION
+
+        # Esf tree special case
+        if isinstance(obj, AreaConfiguration):
+            if esf_tree_logged:
+                continue
+            else:
+                object_repr=obj.area.ident
+        else:
+            object_repr=force_unicode(obj)
+
 
         change_message = utils.change_message(
             old_object=action['pre_copy'],
@@ -82,7 +98,10 @@ def process_request_handler(**kwargs):
             user_id=utils.user_pk(),
             content_type_id=utils.get_contenttype_id(obj),
             object_id=obj.pk,
-            object_repr=force_unicode(obj),
+            object_repr=object_repr,
             action_flag=action_flag,
             change_message=change_message,
         )
+
+        # Esf tree special case
+        esf_tree_logged = isinstance(obj, AreaConfiguration)

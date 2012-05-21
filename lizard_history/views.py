@@ -21,3 +21,20 @@ class ApiObjectView(View):
             return history['api_object']
 
         return Response(status.HTTP_404_NOT_FOUND)
+
+        
+class OtherObjectView(View):
+    """
+    Show a historic other object stored in the admin log
+    """
+    def get(self, request, log_entry_id):
+        if request.user.is_anonymous():
+            return Response(status.HTTP_403_FORBIDDEN)
+        history = utils.get_history(
+            log_entry_id=log_entry_id,
+        )
+
+        if 'tree' in history:
+            return history['tree']
+
+        return Response(status.HTTP_404_NOT_FOUND)

@@ -16,9 +16,9 @@ urlpatterns = patterns(
     (r'^admin/', include(admin.site.urls)),
     url(r'^api_object/(?P<log_entry_id>[0-9]+)/$',
         views.ApiObjectView.as_view(),
-        name=NAME_PREFIX + 'history'),
-    # url(r'^something/',
-    #     direct.import.views.some_method,
-    #     name="name_it"),
+        name=NAME_PREFIX + 'api_object'),
+    url(r'^other_object/(?P<log_entry_id>[0-9]+)/$',
+        views.OtherObjectView.as_view(),
+        name=NAME_PREFIX + 'other_object'),
     )
 urlpatterns += debugmode_urlpatterns()

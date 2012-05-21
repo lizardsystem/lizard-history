@@ -1,6 +1,7 @@
 # (c) Nelen & Schuurmans.  GPL licensed, see LICENSE.txt.
 
 from django.db.models import Model
+from django.http import HttpRequest
 
 from django.utils import simplejson
 from django.utils.translation import ugettext as _
@@ -13,6 +14,8 @@ from django.contrib.admin.models import LogEntry
 
 from django.contrib.auth.models import User
 from django.contrib.auth.models import AnonymousUser
+
+from lizard_esf.models import AreaConfiguration
 
 from tls import request
 
@@ -127,22 +130,48 @@ def _diff(obj1, obj2):
         return {}
 
 
-def _api_object(obj):
+def _api_object(obj, view):
     """
-    Return the object as given by the api view.
-
-    This is defined view defined by the HISTORY_DATA_VIEW attribute.
+    Return data if view is a base_api subclass
     """
-    view = load_object(obj.HISTORY_DATA_VIEW)
     return {
-        'data': view().get_object_for_api(
-            obj,
-            include_geom=True,
-            flat=False,
-        ),
-        'success': True,
+        'api_object': {
+            'data': view().get_object_for_api(
+                obj,
+                include_geom=True,
+                flat=False,
+            ),
+            'success': True,
+        }    
     }
 
+
+def _other_object(obj, view):
+    """
+    Return data for general get request on view.
+    """
+    # Our view expects a request, so let's make one.
+    view_request = HttpRequest()
+    view_request.user = request.user
+    view_request.GET = view_request.GET.copy()
+    view_request.GET.update(object_id=obj.area.ident)
+
+    return {
+        'tree': view().get(view_request)
+    }
+
+
+def _custom_extras(obj):
+    """ 
+    Return custom properties to save in history based on objects'
+    HISTORY_DATA_VIEW attribute.
+    """
+    view = load_object(obj.HISTORY_DATA_VIEW)
+    if hasattr(view, 'get_object_for_api'):
+        return _api_object(obj, view)
+
+    return _other_object(obj, view)
+    
 
 def change_message(old_object, new_object, instance):
     """
@@ -157,7 +186,7 @@ def change_message(old_object, new_object, instance):
     if hasattr(instance, 'lizard_history_summary'):
         message_object.update(summary=instance.lizard_history_summary)
     if hasattr(new_object, 'HISTORY_DATA_VIEW'):
-        message_object.update(api_object=_api_object(new_object))
+        message_object.update(_custom_extras(new_object))
 
     # If there are no changes, we need no log.
     if message_object == {'changes': {}}:
@@ -211,7 +240,7 @@ def get_simple_history(obj):
     return simple_history
 
 
-def _log_entry_to_dict(log_entry):
+def _log_entry_to_dict(log_entry, include_data=False):
     """ Return a dict with selected info from log_entry """
     data = simplejson.loads(log_entry.change_message)
 
@@ -228,7 +257,8 @@ def _log_entry_to_dict(log_entry):
         'log_entry_id': log_entry.pk,
     }
 
-    result.update(data)
+    if include_data:
+        result.update(data)
 
     return result
 
@@ -239,7 +269,7 @@ def get_history(obj=None, log_entry_id=None):
     """
     if log_entry_id:
         log_entry = LogEntry.objects.get(pk=log_entry_id)
-        return _log_entry_to_dict(log_entry)
+        return _log_entry_to_dict(log_entry, include_data=True)
 
     content_type = ContentType.objects.get_for_model(obj)
     object_id = obj.pk
@@ -249,5 +279,22 @@ def get_history(obj=None, log_entry_id=None):
         content_type=content_type,
         action_flag__in=[LIZARD_ADDITION, LIZARD_CHANGE, LIZARD_DELETION],
     )
+
+    return [_log_entry_to_dict(l) for l in entries]
+
+
+def get_esf_history(area):
+    """
+    Return full history for esf trees for given area for given area.
+    """
+    content_type = ContentType.objects.get_for_model(AreaConfiguration)
+
+    # Logging for AreaConfigurations is set up to log once per request
+    # and put the area_ident in the object_repr field.
+    entries = LogEntry.objects.filter(
+        content_type=content_type,
+        object_repr=area.ident,
+    )
+
 
     return [_log_entry_to_dict(l) for l in entries]
