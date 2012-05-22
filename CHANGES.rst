@@ -7,6 +7,8 @@ Changelog of lizard-history
 
 - Implement special case of esf tree.
 
+- Tweak history for use with wbconfiguration.
+
 
 0.2.6 (2012-05-10)
 ------------------

@@ -1,5 +1,4 @@
 # (c) Nelen & Schuurmans.  GPL licensed, see LICENSE.txt.
-
 from django.db.models import Model
 from django.http import HttpRequest
 
@@ -22,6 +21,15 @@ from tls import request
 from django_load.core import load_object
 import datetime
 import hashlib
+
+from lizard_wbconfiguration.models import (
+    Bucket,
+    Structure,
+)
+from lizard_wbconfiguration.api.views import (
+    WaterBalanceAreaObjectConfiguration,
+    WaterBalanceAreaConfiguration,
+)
 
 LIZARD_ADDITION = 4
 LIZARD_CHANGE = 5
@@ -146,6 +154,45 @@ def _api_object(obj, view):
     }
 
 
+def _wbconfiguration_object(obj):
+    """
+    Return data for all four views of the wbconfiguration object.
+    """
+    result = {}
+
+    # Our views expects a request, so let's make one.
+    view_request = HttpRequest()
+    view_request.user = request.user
+    view_request.GET = view_request.GET.copy()  # Make request mutable.
+    view_request.GET.update(
+        object_id=obj.area.area.ident,
+        grid_name='water',
+    )
+    result.update(
+        water=WaterBalanceAreaConfiguration().get(view_request)
+    )
+
+    view_request.GET.update(
+        grid_name='area',
+    )
+    result.update(
+        area=WaterBalanceAreaConfiguration().get(view_request)
+    )
+
+    del view_request.GET['grid_name']
+    view_request.GET.update(area_object_type='Bucket')
+    result.update(
+        bucket=WaterBalanceAreaObjectConfiguration().get(view_request)
+    )
+
+    view_request.GET.update(area_object_type='Structure')
+    result.update(
+        structure=WaterBalanceAreaObjectConfiguration().get(view_request)
+    )
+
+    return result
+
+
 def _other_object(obj, view):
     """
     Return data for general get request on view.
@@ -153,7 +200,7 @@ def _other_object(obj, view):
     # Our view expects a request, so let's make one.
     view_request = HttpRequest()
     view_request.user = request.user
-    view_request.GET = view_request.GET.copy()
+    view_request.GET = view_request.GET.copy()  # Make request mutable.
     view_request.GET.update(object_id=obj.area.ident)
 
     return {
@@ -163,13 +210,18 @@ def _other_object(obj, view):
 
 def _custom_extras(obj):
     """ 
-    Return custom properties to save in history based on objects'
-    HISTORY_DATA_VIEW attribute.
+    Return custom properties to save in history.
     """
+    if isinstance(obj, (Structure, Bucket)):
+        return _wbconfiguration_object(obj)
+
+    if not hasattr(new_object, 'HISTORY_DATA_VIEW'):
+        return {}
     view = load_object(obj.HISTORY_DATA_VIEW)
+   
     if hasattr(view, 'get_object_for_api'):
         return _api_object(obj, view)
-
+    
     return _other_object(obj, view)
     
 
@@ -185,8 +237,8 @@ def change_message(old_object, new_object, instance):
 
     if hasattr(instance, 'lizard_history_summary'):
         message_object.update(summary=instance.lizard_history_summary)
-    if hasattr(new_object, 'HISTORY_DATA_VIEW'):
-        message_object.update(_custom_extras(new_object))
+    
+    message_object.update(_custom_extras(new_object))
 
     # If there are no changes, we need no log.
     if message_object == {'changes': {}}:
@@ -255,6 +307,7 @@ def _log_entry_to_dict(log_entry, include_data=False):
         'user': str(log_entry.user),
         'datetime': str(log_entry.action_time),
         'log_entry_id': log_entry.pk,
+        'object_repr': log_entry.object_repr,
     }
 
     if include_data:
@@ -263,13 +316,13 @@ def _log_entry_to_dict(log_entry, include_data=False):
     return result
 
 
-def get_history(obj=None, log_entry_id=None):
+def get_history(obj=None, log_entry_id=None, include_data=True):
     """
     Return full history for obj or changes for log_entry_id
     """
     if log_entry_id:
         log_entry = LogEntry.objects.get(pk=log_entry_id)
-        return _log_entry_to_dict(log_entry, include_data=True)
+        return _log_entry_to_dict(log_entry, include_data=include_data)
 
     content_type = ContentType.objects.get_for_model(obj)
     object_id = obj.pk

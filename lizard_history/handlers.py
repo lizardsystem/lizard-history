@@ -4,6 +4,10 @@ from django.utils.encoding import force_unicode
 from django.contrib.admin.models import LogEntry
 from lizard_history import utils
 from lizard_esf.models import AreaConfiguration
+from lizard_wbconfiguration.models import (
+    Bucket,
+    Structure,
+)
 from tls import request
 
 
@@ -55,8 +59,7 @@ def process_request_handler(**kwargs):
     if not hasattr(request, 'lizard_history'):
         return
 
-    # Esf tree special case
-    esf_tree_logged = False
+    logged_models = set()
 
     for action in request.lizard_history.values():
 
@@ -73,16 +76,20 @@ def process_request_handler(**kwargs):
             obj = action['pre_copy']
             action_flag = utils.LIZARD_DELETION
 
-        # Esf tree special case
+        # Custom handling of esf and wbconfiguration objects.
         if isinstance(obj, AreaConfiguration):
-            if esf_tree_logged:
+            if AreaConfiguration in logged_models:
                 continue
             else:
-                object_repr=obj.area.ident
+                object_repr = obj.area.ident
+        elif isinstance(obj, (Structure, Bucket)):
+            if (Structure in logged_models or Bucket in logged_models):
+                continue
+            else:
+                object_repr = obj.area.area.ident
         else:
             object_repr=force_unicode(obj)
-
-
+        
         change_message = utils.change_message(
             old_object=action['pre_copy'],
             new_object=action['post_copy'],
@@ -103,5 +110,4 @@ def process_request_handler(**kwargs):
             change_message=change_message,
         )
 
-        # Esf tree special case
-        esf_tree_logged = isinstance(obj, AreaConfiguration)
+        logged_models.add(obj.__class__)
