@@ -312,6 +312,9 @@ def _log_entry_to_dict(log_entry, include_data=False):
         'object_repr': log_entry.object_repr,
     }
 
+    # Include summary regardless of include_data argument
+    result.update(summary=data.get('summary', ''))
+
     if include_data:
         result.update(data)
 
