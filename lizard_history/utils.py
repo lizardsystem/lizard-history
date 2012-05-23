@@ -22,13 +22,18 @@ from django_load.core import load_object
 import datetime
 import hashlib
 
-from lizard_wbconfiguration.models import (
-    Bucket,
-    Structure,
-)
 from lizard_wbconfiguration.api.views import (
     WaterBalanceAreaObjectConfiguration,
     WaterBalanceAreaConfiguration,
+)
+
+import lizard_wbconfiguration  # Beware of conflicting AreaConfiguration
+                               # in lizard_esf.models
+
+WBCONFIGURATION_CLASSES = (
+    lizard_wbconfiguration.models.AreaConfiguration,
+    lizard_wbconfiguration.models.Structure,
+    lizard_wbconfiguration.models.Bucket,
 )
 
 LIZARD_ADDITION = 4
@@ -212,15 +217,14 @@ def _custom_extras(obj):
     """ 
     Return custom properties to save in history.
     """
-    if isinstance(obj, (Structure, Bucket)):
+    if isinstance(obj, WBCONFIGURATION_CLASSES):
         return _wbconfiguration_object(obj)
 
-    if not hasattr(new_object, 'HISTORY_DATA_VIEW'):
+    if not hasattr(obj, 'HISTORY_DATA_VIEW'):
         return {}
     view = load_object(obj.HISTORY_DATA_VIEW)
    
-    if hasattr(view, 'get_object_for_api'):
-        return _api_object(obj, view)
+    if hasattr(view, 'get_object_for_api'):        return _api_object(obj, view)
     
     return _other_object(obj, view)
     
@@ -228,8 +232,6 @@ def _custom_extras(obj):
 def change_message(old_object, new_object, instance):
     """
     Return a suitable change message.
-
-    Any kwargs are added to the change message.
     """
     message_object = {
         'changes': _diff(old_object, new_object),
@@ -336,18 +338,20 @@ def get_history(obj=None, log_entry_id=None, include_data=True):
     return [_log_entry_to_dict(l) for l in entries]
 
 
-def get_esf_history(area):
+def get_specific_history(models, area):
     """
-    Return full history for esf trees for given area for given area.
+    Return specific history list corresponding to models and area.
     """
-    content_type = ContentType.objects.get_for_model(AreaConfiguration)
-
-    # Logging for AreaConfigurations is set up to log once per request
-    # and put the area_ident in the object_repr field.
-    entries = LogEntry.objects.filter(
-        content_type=content_type,
-        object_repr=area.ident,
+    content_types = map(
+        ContentType.objects.get_for_model,
+        models,
     )
 
+    # Works for objects where complete log is stored in single logentry
+    # with area_ident in the object_repr field.
+    entries = LogEntry.objects.filter(
+        content_type__in=content_types,
+        object_repr=area.ident,
+    )
 
     return [_log_entry_to_dict(l) for l in entries]

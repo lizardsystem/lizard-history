@@ -4,11 +4,16 @@ from django.utils.encoding import force_unicode
 from django.contrib.admin.models import LogEntry
 from lizard_history import utils
 from lizard_esf.models import AreaConfiguration
-from lizard_wbconfiguration.models import (
-    Bucket,
-    Structure,
-)
 from tls import request
+
+import lizard_wbconfiguration  # Beware of conflicting AreaConfiguration
+                               # in lizard_esf.models
+
+WBCONFIGURATION_CLASSES = (
+    lizard_wbconfiguration.models.AreaConfiguration,
+    lizard_wbconfiguration.models.Structure,
+    lizard_wbconfiguration.models.Bucket,
+)
 
 
 def db_handler(sender, instance, **kwargs):
@@ -53,8 +58,8 @@ def process_request_handler(**kwargs):
     """
     Log any changes recorded on the request object.
 
-    The esf-tree is a special case, the change_message will contain all
-    objects so we only need to write it once.
+    Some models are special, 
+
     """
     if not hasattr(request, 'lizard_history'):
         return
@@ -76,17 +81,18 @@ def process_request_handler(**kwargs):
             obj = action['pre_copy']
             action_flag = utils.LIZARD_DELETION
 
-        # Custom handling of esf and wbconfiguration objects.
+        # Custom handling starts here
         if isinstance(obj, AreaConfiguration):
             if AreaConfiguration in logged_models:
-                continue
+                continue  # Already logged the esf data
             else:
                 object_repr = obj.area.ident
-        elif isinstance(obj, (Structure, Bucket)):
-            if (Structure in logged_models or Bucket in logged_models):
-                continue
+        elif isinstance(obj, WBCONFIGURATION_CLASSES):
+            if logged_models.intersection(WBCONFIGURATION_CLASSES):
+                continue  # Already logged the wbconfiguration data
             else:
                 object_repr = obj.area.area.ident
+        # Custom handling starts ends here
         else:
             object_repr=force_unicode(obj)
         
