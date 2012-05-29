@@ -2,7 +2,7 @@ Changelog of lizard-history
 ===================================================
 
 
-0.2.7 (unreleased)
+0.2.7 (2012-05-29)
 ------------------
 
 - Implement special case of esf tree.
