@@ -2,7 +2,7 @@ Changelog of lizard-history
 ===================================================
 
 
-0.2.8 (unreleased)
+0.2.8 (2012-05-31)
 ------------------
 
 - Fix bug when objects are pre_saved, but not actually saved,
