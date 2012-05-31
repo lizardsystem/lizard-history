@@ -81,6 +81,9 @@ def process_request_handler(**kwargs):
             obj = action['pre_copy']
             action_flag = utils.LIZARD_DELETION
 
+        else:
+            continue
+
         # Custom handling starts here
         if isinstance(obj, AreaConfiguration):
             if AreaConfiguration in logged_models:
