@@ -14,26 +14,17 @@ from django.contrib.admin.models import LogEntry
 from django.contrib.auth.models import User
 from django.contrib.auth.models import AnonymousUser
 
-from lizard_esf.models import AreaConfiguration
-
 from tls import request
 
 from django_load.core import load_object
 import datetime
 import hashlib
 
-from lizard_wbconfiguration.api.views import (
-    WaterBalanceAreaObjectConfiguration,
-    WaterBalanceAreaConfiguration,
-)
 
-import lizard_wbconfiguration  # Beware of conflicting AreaConfiguration
-                               # in lizard_esf.models
-
-WBCONFIGURATION_CLASSES = (
-    lizard_wbconfiguration.models.AreaConfiguration,
-    lizard_wbconfiguration.models.Structure,
-    lizard_wbconfiguration.models.Bucket,
+WBCONFIGURATION_MODELS = (
+    'lizard_wbconfiguration.AreaConfiguration',
+    'lizard_wbconfiguration.Structure',
+    'lizard_wbconfiguration.Bucket',
 )
 
 LIZARD_ADDITION = 4
@@ -61,6 +52,29 @@ def object_hash(obj, use_time=True):
         sha1.update(str(datetime.datetime.now()))
 
     return sha1.hexdigest()
+
+
+def model_for_object(obj):
+    """
+    Return model path in 'app_label.object_name' style
+    """
+    return obj._meta.app_label + '.' + obj._meta.object_name
+
+
+def is_object_of(obj, model):
+    """
+    Return if objects class info matches at least one of mod_and_class.
+    """
+    if isinstance(model, str):
+        models = [model]
+    else:
+        models = model
+
+    for m in models:
+        if m == model_for_object(obj):
+            return True
+
+    return False
 
 
 def _model_dict(obj):
@@ -155,47 +169,8 @@ def _api_object(obj, view):
                 flat=False,
             ),
             'success': True,
-        }    
+        }
     }
-
-
-def _wbconfiguration_object(obj):
-    """
-    Return data for all four views of the wbconfiguration object.
-    """
-    result = {}
-
-    # Our views expects a request, so let's make one.
-    view_request = HttpRequest()
-    view_request.user = request.user
-    view_request.GET = view_request.GET.copy()  # Make request mutable.
-    view_request.GET.update(
-        object_id=obj.area.area.ident,
-        grid_name='water',
-    )
-    result.update(
-        water=WaterBalanceAreaConfiguration().get(view_request)
-    )
-
-    view_request.GET.update(
-        grid_name='area',
-    )
-    result.update(
-        area=WaterBalanceAreaConfiguration().get(view_request)
-    )
-
-    del view_request.GET['grid_name']
-    view_request.GET.update(area_object_type='Bucket')
-    result.update(
-        bucket=WaterBalanceAreaObjectConfiguration().get(view_request)
-    )
-
-    view_request.GET.update(area_object_type='Structure')
-    result.update(
-        structure=WaterBalanceAreaObjectConfiguration().get(view_request)
-    )
-
-    return result
 
 
 def _other_object(obj, view):
@@ -214,20 +189,19 @@ def _other_object(obj, view):
 
 
 def _custom_extras(obj):
-    """ 
+    """
     Return custom properties to save in history.
     """
-    if isinstance(obj, WBCONFIGURATION_CLASSES):
-        return _wbconfiguration_object(obj)
-
     if not hasattr(obj, 'HISTORY_DATA_VIEW'):
         return {}
     view = load_object(obj.HISTORY_DATA_VIEW)
-   
-    if hasattr(view, 'get_object_for_api'):        return _api_object(obj, view)
-    
+    view.user = request.user  # For the wbconfiguration to work...
+
+    if hasattr(view, 'get_object_for_api'):
+        return _api_object(obj, view)
+
     return _other_object(obj, view)
-    
+
 
 def change_message(old_object, new_object, instance):
     """
@@ -239,7 +213,7 @@ def change_message(old_object, new_object, instance):
 
     if hasattr(instance, 'lizard_history_summary'):
         message_object.update(summary=instance.lizard_history_summary)
-    
+
     message_object.update(_custom_extras(new_object))
 
     # If there are no changes, we need no log.

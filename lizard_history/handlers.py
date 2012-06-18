@@ -3,16 +3,16 @@ from django.utils.encoding import force_unicode
 
 from django.contrib.admin.models import LogEntry
 from lizard_history import utils
-from lizard_esf.models import AreaConfiguration
 from tls import request
 
-import lizard_wbconfiguration  # Beware of conflicting AreaConfiguration
-                               # in lizard_esf.models
+ESF_MODELS = (
+    'lizard_esf.AreaConfiguration',
+)
 
-WBCONFIGURATION_CLASSES = (
-    lizard_wbconfiguration.models.AreaConfiguration,
-    lizard_wbconfiguration.models.Structure,
-    lizard_wbconfiguration.models.Bucket,
+WBCONFIGURATION_MODELS = (
+    'lizard_wbconfiguration.AreaConfiguration',
+    'lizard_wbconfiguration.Structure',
+    'lizard_wbconfiguration.Bucket',
 )
 
 
@@ -58,7 +58,7 @@ def process_request_handler(**kwargs):
     """
     Log any changes recorded on the request object.
 
-    Some models are special, 
+    Some models are special,
 
     """
     if not hasattr(request, 'lizard_history'):
@@ -85,20 +85,20 @@ def process_request_handler(**kwargs):
             continue
 
         # Custom handling starts here
-        if isinstance(obj, AreaConfiguration):
-            if AreaConfiguration in logged_models:
+        if utils.is_object_of(obj, ESF_MODELS):
+            if logged_models.intersection(ESF_MODELS):
                 continue  # Already logged the esf data
             else:
                 object_repr = obj.area.ident
-        elif isinstance(obj, WBCONFIGURATION_CLASSES):
-            if logged_models.intersection(WBCONFIGURATION_CLASSES):
+        elif utils.is_object_of(obj, WBCONFIGURATION_MODELS):
+            if logged_models.intersection(WBCONFIGURATION_MODELS):
                 continue  # Already logged the wbconfiguration data
             else:
                 object_repr = obj.area.area.ident
         # Custom handling starts ends here
         else:
-            object_repr=force_unicode(obj)
-        
+            object_repr = force_unicode(obj)
+
         change_message = utils.change_message(
             old_object=action['pre_copy'],
             new_object=action['post_copy'],
@@ -119,4 +119,4 @@ def process_request_handler(**kwargs):
             change_message=change_message,
         )
 
-        logged_models.add(obj.__class__)
+        logged_models.add(utils.model_for_object(obj))

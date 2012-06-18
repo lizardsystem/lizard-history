@@ -22,7 +22,7 @@ class ApiObjectView(View):
 
         return Response(status.HTTP_404_NOT_FOUND)
 
-        
+
 class OtherObjectView(View):
     """
     Show a historic other object stored in the admin log
@@ -53,6 +53,11 @@ class AreaObjectConfigurationView(View):
         history = utils.get_history(
             log_entry_id=log_entry_id,
         )
+
+        # Anticipate new way of storing archive JSON
+        if 'api_object' in history:
+            history.update(history['api_object']['data'])
+
         try:
             area_object_type = request.GET['area_object_type']
             return history[area_object_type.lower()]
@@ -73,6 +78,10 @@ class AreaConfigurationView(View):
         history = utils.get_history(
             log_entry_id=log_entry_id,
         )
+
+        # Anticipate new way of storing archive JSON
+        if 'api_object' in history:
+            history.update(history['api_object']['data'])
 
         try:
             grid_name = request.GET['grid_name']

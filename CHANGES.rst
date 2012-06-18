@@ -5,7 +5,8 @@ Changelog of lizard-history
 0.2.9 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Remove dependencies on lizard-esf and lizard-wbconfiguration.
+- Move specific wbconfiguration method to lizard-wbconfiguration.
 
 
 0.2.8 (2012-05-31)
