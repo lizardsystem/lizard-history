@@ -15,4 +15,13 @@ this in the dbshell::
         app_label='your_app_label';
 
 When adding manually, note that the model name should be lowercase,
-just like in django's contenttype table.
+just like in django's contenttype table. When a model is monitored,
+the history of its objects can be queried in django::
+
+    from lizard_history.utils import get_simple_history
+    get_simple_history(my_object) # Get basic created / modified info
+
+    from lizard_history.utils import get_history
+    get_history(obj=my_object)  # Gets a detailed history list,
+                                # including log_entry_id
+    get_history(log_entry_id)   # Gets detailed history for one change event.
