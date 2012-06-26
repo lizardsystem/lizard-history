@@ -5,7 +5,7 @@ Changelog of lizard-history
 0.2.10 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Improve change_message, use __dict__ now instead of django serializer.
 
 
 0.2.9 (2012-06-18)

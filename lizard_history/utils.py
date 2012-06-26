@@ -97,6 +97,24 @@ def _model_dict(obj):
     return model_dict
 
 
+def _model_dict_based_on_dict(obj):
+    """
+    Return a dict representing the Django model instance.
+
+    Uses objects __dict__ attribute, to include fields from parent models.
+    """
+    if obj is None:
+        return {}
+
+    model_dict = {}
+
+    for k, v in obj.__dict__.items():
+        if not k.startswith('_'):
+            model_dict[k] = unicode(v)  # Mainly to get rid of datetimes
+    
+    return model_dict
+
+
 def get_contenttype_id(obj):
     """
     Return contenttype id or None.
@@ -132,8 +150,8 @@ def _model_diff(obj1, obj2):
     Return diff for Django models or None objects
     """
     return _dict_diff(
-        _model_dict(obj1),
-        _model_dict(obj2),
+        _model_dict_based_on_dict(obj1),
+        _model_dict_based_on_dict(obj2),
     )
 
 
