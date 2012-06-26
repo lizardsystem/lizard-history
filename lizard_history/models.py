@@ -78,9 +78,18 @@ def post_delete_handler(sender, instance, **kwargs):
 
 @receiver(models.signals.m2m_changed)
 def m2m_changed_handler(sender, instance, **kwargs):
-    if _is_monitored(sender):
-        kwargs.update(signal_name='m2m_changed')
-        handlers.db_handler(sender, instance, **kwargs)
+    """
+    A bit different than the four signals above, since
+    the m2m_changed signal looks a bit different.
+    """
+    if _is_monitored(instance.__class__):
+        model_with_m2m_relation = instance.__class__
+        intermediate_model = sender
+        other_end_model = kwargs.get('model')
+        db_handler_kwargs = {
+            'signal_name': kwargs['action'],
+        }
+        handlers.db_handler(instance.__class__, instance,  **db_handler_kwargs)
 
 
 class MonitoredModel(models.Model):
