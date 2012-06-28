@@ -111,7 +111,7 @@ def _model_dict_based_on_dict(obj):
     for k, v in obj.__dict__.items():
         if not k.startswith('_'):
             model_dict[k] = unicode(v)  # Mainly to get rid of datetimes
-    
+
     return model_dict
 
 

@@ -82,14 +82,14 @@ def m2m_changed_handler(sender, instance, **kwargs):
     A bit different than the four signals above, since
     the m2m_changed signal looks a bit different.
     """
-    if _is_monitored(instance.__class__):
-        model_with_m2m_relation = instance.__class__
-        intermediate_model = sender
-        other_end_model = kwargs.get('model')
-        db_handler_kwargs = {
-            'signal_name': kwargs['action'],
-        }
-        handlers.db_handler(instance.__class__, instance,  **db_handler_kwargs)
+    model_with_m2m_relation = instance.__class__
+    if _is_monitored(model_with_m2m_relation):
+        handlers.db_handler(model_with_m2m_relation,
+                            instance,
+                            intermediate_model=sender,
+                            other_end_model=kwargs['model'],
+                            signal_name=kwargs['action'],
+                            **kwargs)
 
 
 class MonitoredModel(models.Model):
