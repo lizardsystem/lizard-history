@@ -5,7 +5,9 @@ Changelog of lizard-history
 0.2.11 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Log changes to many2manyfields as well.
+
+- Change some internals.
 
 
 0.2.10 (2012-06-26)
