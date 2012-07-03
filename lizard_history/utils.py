@@ -66,7 +66,7 @@ def end_fake_request():
 def user_pk():
     """ Determine the user for this request."""
     user = active_request().user
-    if isinstance(user, AnonymousUser):
+    if isinstance(user, AnonymousUser) or not user:
         # Get the first superuser
         return User.objects.filter(is_superuser=True)[0].pk
     return user.pk
