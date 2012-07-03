@@ -3,7 +3,6 @@ from django.utils.encoding import force_unicode
 
 from django.contrib.admin.models import LogEntry
 from lizard_history import utils
-from tls import request
 
 OBJECT_ATTRIBUTE = '_lizard_history_hash'
 REQUEST_ATTRIBUTE = 'lizard_history'
@@ -35,9 +34,9 @@ def _get_or_create_history(obj):
         setattr(obj, OBJECT_ATTRIBUTE, utils.object_hash(obj))
     obj_hash = getattr(obj, OBJECT_ATTRIBUTE)
 
-    if not hasattr(request, REQUEST_ATTRIBUTE):
-        setattr(request, REQUEST_ATTRIBUTE, {})
-    history = getattr(request, REQUEST_ATTRIBUTE)
+    if not hasattr(utils.active_request(), REQUEST_ATTRIBUTE):
+        setattr(utils.active_request(), REQUEST_ATTRIBUTE, {})
+    history = getattr(utils.active_request(), REQUEST_ATTRIBUTE)
 
     if not obj_hash in history:
         history[obj_hash] = {SIGNALS_KEY: []}
@@ -70,9 +69,9 @@ def _get_db_copy(obj):
 
 def db_handler(sender, instance, signal_name, raw=None, **kwargs):
     """
-    Store old and new objects on the request.
+    Store old and new objects on the active request.
     """
-    if raw or not request:
+    if raw or not utils.active_request():
         return
 
     history = _get_or_create_history(instance)
@@ -88,10 +87,10 @@ def process_request_handler(**kwargs):
     """
     Log any changes recorded on the request object.
     """
-    if not hasattr(request, REQUEST_ATTRIBUTE):
+    if not hasattr(utils.active_request(), REQUEST_ATTRIBUTE):
         return
     try:
-        actions = getattr(request, REQUEST_ATTRIBUTE).values()
+        actions = getattr(utils.active_request(), REQUEST_ATTRIBUTE).values()
     except AttributeError:
         return
 

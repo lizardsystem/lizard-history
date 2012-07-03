@@ -14,9 +14,11 @@ from django.contrib.admin.models import LogEntry
 from django.contrib.auth.models import User
 from django.contrib.auth.models import AnonymousUser
 
-from tls import request
-
+from tls import request as tls_request
+from werkzeug.local import Local, release_local
+from lizard_history.signals import ops_done
 from django_load.core import load_object
+
 import datetime
 import hashlib
 
@@ -31,13 +33,43 @@ LIZARD_ADDITION = 4
 LIZARD_CHANGE = 5
 LIZARD_DELETION = 6
 
+_local = Local()
+fake_request = _local('fake_request')
+
+
+def active_request():
+    return tls_request or fake_request
+
+
+def start_fake_request(**kwargs):
+    """
+    Set a fake request.
+
+    It will be used by lizard_history if there is no real request. Any
+    kwargs will be set as attributes on the fake request.
+    """
+    fake_request = HttpRequest()
+    for k, v in kwargs.items():
+        setattr(fake_request, k, v)
+    _local.fake_request = fake_request
+
+
+def end_fake_request():
+    """
+    Start lizard_history machinery to log changes and remove the
+    fake_request from the thread.
+    """
+    ops_done.send(None)
+    release_local(_local)
+
 
 def user_pk():
     """ Determine the user for this request."""
-    if isinstance(request.user, AnonymousUser):
+    user = active_request().user
+    if isinstance(user, AnonymousUser):
         # Get the first superuser
         return User.objects.filter(is_superuser=True)[0].pk
-    return request.user.pk
+    return user.pk
 
 
 def object_hash(obj, use_time=True):
@@ -197,7 +229,7 @@ def _other_object(obj, view):
     """
     # Our view expects a request, so let's make one.
     view_request = HttpRequest()
-    view_request.user = request.user
+    view_request.user = active_request().get('user')
     view_request.GET = view_request.GET.copy()  # Make request mutable.
     view_request.GET.update(object_id=obj.area.ident)
 
@@ -213,7 +245,8 @@ def _custom_extras(obj):
     if not hasattr(obj, 'HISTORY_DATA_VIEW'):
         return {}
     view = load_object(obj.HISTORY_DATA_VIEW)
-    view.user = request.user  # For the wbconfiguration to work...
+
+    view.user = active_request().user  # For the wbconfiguration to work...
 
     if hasattr(view, 'get_object_for_api'):
         return _api_object(obj, view)

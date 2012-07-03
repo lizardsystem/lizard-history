@@ -5,7 +5,8 @@ Changelog of lizard-history
 0.4 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Make it possible to use history's logging capabilities without a real
+  request.
 
 
 0.3 (2012-06-28)

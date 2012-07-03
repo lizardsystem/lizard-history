@@ -25,3 +25,15 @@ the history of its objects can be queried in django::
     get_history(obj=my_object)  # Gets a detailed history list,
                                 # including log_entry_id
     get_history(log_entry_id)   # Gets detailed history for one change event.
+
+It is possible to log changes to monitored models even outside a request,
+for example when executing management commands. A special fake request
+can be started::
+    
+    from lizard_history.utils import start_fake_request, end_fake_request
+    start_fake_request(user=some_user)  # Kwargs will become request attributes
+    # Do stuff that should be logged by lizard_history
+    end_fake_request()
+
+If the code above is run during a real request, the real request takes
+precedence over the fake request.
