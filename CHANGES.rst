@@ -2,7 +2,7 @@ Changelog of lizard-history
 ===================================================
 
 
-0.4 (unreleased)
+0.4 (2012-07-03)
 ----------------
 
 - Make it possible to use history's logging capabilities without a real
