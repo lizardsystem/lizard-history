@@ -2,8 +2,8 @@ Changelog of lizard-history
 ===================================================
 
 
-0.5 (unreleased)
-----------------
+0.4.1 (2012-07-03)
+------------------
 
 - Make fake request without user default to first superuser.
 
