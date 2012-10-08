@@ -2,7 +2,7 @@ Changelog of lizard-history
 ===================================================
 
 
-0.4.2 (unreleased)
+0.4.2 (2012-10-08)
 ------------------
 
 - Fixed indexOutOfRange error in process_request_handler(..).
