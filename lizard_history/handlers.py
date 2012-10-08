@@ -100,8 +100,12 @@ def process_request_handler(**kwargs):
 
         pre_copy = action[PRE_COPY_KEY]
         post_copy = _get_db_copy(action[INSTANCE_KEY])
-        last_signal = [s for s in action[SIGNALS_KEY]
-                       if s in ('post_save', 'post_delete')][-1]
+        signals = [s for s in action[SIGNALS_KEY]
+                   if s in ('post_save', 'post_delete')]
+        if len(signals) <= 0:
+            continue
+            
+        last_signal = signals[-1]
 
         if last_signal == 'post_save':
             obj = post_copy

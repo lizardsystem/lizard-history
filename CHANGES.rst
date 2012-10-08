@@ -5,7 +5,7 @@ Changelog of lizard-history
 0.4.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fixed indexOutOfRange error in process_request_handler(..).
 
 
 0.4.1 (2012-07-03)
