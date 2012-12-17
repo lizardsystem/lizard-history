@@ -17,6 +17,7 @@ install_requires = [
     'djangorestframework',
     'django-tls',
     'lizard-ui >= 3.0',
+    'lizard-security',
     'pkginfo',
     'south',
     ],

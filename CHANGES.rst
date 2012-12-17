@@ -7,6 +7,8 @@ Changelog of lizard-history
 
 - Fixed error on getting an user from werkzeug's request. 
 
+- Ping to lizard-security
+
 
 0.4.2 (2012-10-08)
 ------------------
