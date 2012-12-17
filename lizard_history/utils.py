@@ -228,8 +228,9 @@ def _other_object(obj, view):
     Return data for general get request on view.
     """
     # Our view expects a request, so let's make one.
+    
     view_request = HttpRequest()
-    view_request.user = active_request().get('user')
+    view_request.user = active_request().user
     view_request.GET = view_request.GET.copy()  # Make request mutable.
     view_request.GET.update(object_id=obj.area.ident)
 

@@ -5,7 +5,7 @@ Changelog of lizard-history
 0.4.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fixed error on getting an user from werkzeug's request. 
 
 
 0.4.2 (2012-10-08)
